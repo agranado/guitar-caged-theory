@@ -186,3 +186,62 @@ kbd {
   padding: 1px 5px;
   font-size: 11px;
 }
+
+/* progression stepper */
+.dl-stepper {
+  margin-bottom: 14px;
+}
+.dl-stepbtn {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  border-radius: 8px;
+  padding: 8px 11px;
+  cursor: pointer;
+  font: inherit;
+}
+.dl-stepbtn:hover {
+  color: var(--ink);
+}
+.dl-progchip {
+  position: relative;
+  padding-top: 20px; /* room for the minor-world label */
+}
+.dl-minorlabel {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--minor);
+}
+.dl input[type='number'] {
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+}
+.dl-beatlamp {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--tone);
+  opacity: 0.18;
+  transition: opacity 0.09s ease-out;
+}
+.dl-beatlamp.on {
+  opacity: 1;
+  box-shadow: 0 0 10px var(--tone);
+}
+.dl:focus {
+  outline: none;
+}
+.dl:focus-visible {
+  outline: 2px solid var(--tone);
+  outline-offset: 4px;
+  border-radius: 12px;
+}

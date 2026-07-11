@@ -161,6 +161,10 @@ describe('chordName', () => {
   it('names Isus2 as Dsus2 in D', () => {
     expect(chordName('D', 'Isus2')).toBe('Dsus2')
   })
+  it('honors a 7th carried in the roman itself (vi7 -> Bm7)', () => {
+    expect(chordName('D', 'vi7')).toBe('Bm7')
+    expect(chordName('D', 'V7')).toBe('A7')
+  })
 })
 
 describe('resolveOverlay', () => {

@@ -201,7 +201,8 @@ export function chordName(key: string, roman: string, seventh = false): string {
   const n = romanToDegree(roman)
   const base = noteNameOfDegree(key, n)
   if (SPECIALS[roman] || /sus2/i.test(roman)) return base + 'sus2'
-  return base + (seventh ? QUALITY7[n] : QUALITY[n])
+  const wantSeventh = seventh || /7/.test(roman)
+  return base + (wantSeventh ? QUALITY7[n] : QUALITY[n])
 }
 
 /** A fully-resolved chord overlay: what glows, the guide tones, the name. */

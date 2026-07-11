@@ -8,7 +8,9 @@ export default function App() {
       </h1>
       <p style={{ color: 'var(--ink-dim)', margin: '6px 0 22px', maxWidth: '70ch', lineHeight: 1.5 }}>
         The full parent-scale map stays lit. Pick a chord and its degree-trio glows — same map,
-        different glow. Everything is a scale <b>degree</b>; note names are one toggle away.
+        different glow. Step the progression with <kbd>←</kbd> <kbd>→</kbd> (or <kbd>space</kbd> for
+        the silent metronome) and watch the <span style={{ color: 'var(--fresh)' }}>fresh note</span>{' '}
+        announce each change. Everything is a scale <b>degree</b>; note names are one toggle away.
       </p>
       <DegreeLens />
     </main>
