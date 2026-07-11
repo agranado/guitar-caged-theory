@@ -20,7 +20,8 @@ export default function App() {
     window.location.hash = id
     setCurrentId(id)
     try {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
     } catch {
       // jsdom / unsupported: no-op
     }

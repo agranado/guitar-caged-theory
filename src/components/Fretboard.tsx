@@ -78,14 +78,20 @@ export default function Fretboard({
       const r = isTone ? 13 : 8.5
       let fill = isTone ? (isRoot ? 'var(--root)' : 'var(--tone)') : 'var(--scale-dot)'
       if (minorTonic) fill = 'var(--minor)'
-      const key = isFresh ? `${stringNumber}-${f}-p${pulseId}` : `${stringNumber}-${f}`
+      // Tone/root dots remount on each overlay change so their glow fades in —
+      // the signature "same map, different glow" migration.
+      const key = isFresh || isTone ? `${stringNumber}-${f}-p${pulseId}` : `${stringNumber}-${f}`
       dots.push(
         <g key={key}>
           {isFresh && (
             <circle cx={cx} cy={cy} r={r + 7} fill="none" stroke="var(--fresh)" strokeWidth={1.6} opacity={0.8} />
           )}
           <circle
-            className={isFresh ? 'dl-fresh' : undefined}
+            className={
+              [isFresh ? 'dl-fresh' : '', isTone ? (isRoot ? 'dl-rootdot' : 'dl-tonedot') : '']
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
             cx={cx}
             cy={cy}
             r={r}

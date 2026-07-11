@@ -153,7 +153,33 @@
   color: var(--fresh);
 }
 
-/* fresh-note pulse */
+/* the luminous lit map — chord tones glow, the root hotter */
+.dl-tonedot {
+  filter: drop-shadow(0 0 4px rgba(232, 163, 61, 0.5));
+}
+.dl-rootdot {
+  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.7));
+}
+
+/* overlay-switch: each trio fades/scales in as the glow migrates */
+@keyframes dl-glowin {
+  0% {
+    opacity: 0.15;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.dl-tonedot,
+.dl-rootdot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dl-glowin 0.34s ease-out;
+}
+
+/* fresh-note pulse — the "announce the change" note */
 @keyframes dl-pulse {
   0% {
     r: 13;
@@ -170,11 +196,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dl-fresh {
+  .dl-fresh,
+  .dl-tonedot,
+  .dl-rootdot {
     animation: none;
   }
   .dl-chip,
-  .dl-tog {
+  .dl-tog,
+  .dl-beatlamp {
     transition: none;
   }
 }

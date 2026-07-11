@@ -32,11 +32,18 @@ All music math lives in `src/lib/theory.ts` (pure, unit-tested). Components
 never compute intervals inline. Degrees are the primary label everywhere; note
 names are a secondary, derived label.
 
+## Deploy
+
+Pushing to `main` builds and publishes to GitHub Pages via
+`.github/workflows/deploy.yml` (enable Pages → *Source: GitHub Actions* in repo
+settings once). The build uses a relative base, so `dist/` also opens directly
+from `file://`.
+
 ## Milestones
 
 - **M1** — `theory.ts` + tests ✅
-- **M2** — Fretboard + OverlayControls
-- **M3** — ProgressionStepper
-- **M4** — TriadWindows + BoxView
-- **M5** — Lesson content + module nav
-- **M6** — polish (mobile, print, motion)
+- **M2** — Fretboard + OverlayControls ✅
+- **M3** — ProgressionStepper (presets + silent metronome) ✅
+- **M4** — TriadWindows + BoxView ✅
+- **M5** — Lesson content (8 modules) + module nav + tab linter ✅
+- **M6** — polish (mobile zoom, print stylesheet, reduced-motion, glow) ✅

@@ -47,7 +47,11 @@ export default function DegreeLens({
   const [minor, setMinor] = useState(initialMinor)
   const [names, setNames] = useState(false)
   const [zoneStart, setZoneStart] = useState(initialZoneStart)
-  const [zoom, setZoom] = useState(false)
+  // On a narrow screen, default to the zoomed position window (the whole neck
+  // doesn't fit legibly on a phone).
+  const [zoom, setZoom] = useState(
+    () => typeof window !== 'undefined' && !!window.matchMedia?.('(max-width: 700px)').matches,
+  )
 
   // Progression / metronome state.
   const [progId, setProgId] = useState(initialProgId)
