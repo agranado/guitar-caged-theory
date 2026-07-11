@@ -24,6 +24,7 @@ export interface DegreeLensProps {
   initialZoneStart?: number
   initialSeventh?: boolean
   initialMinor?: boolean
+  initialGuides?: boolean
   /** Show the progression stepper (default true). */
   showStepper?: boolean
   initialProgId?: string
@@ -35,13 +36,14 @@ export default function DegreeLens({
   initialZoneStart = 7,
   initialSeventh = false,
   initialMinor = false,
+  initialGuides = false,
   showStepper = true,
   initialProgId = 'home',
 }: DegreeLensProps) {
   const [keyName, setKeyName] = useState(initialKey)
   const [roman, setRoman] = useState(initialRoman)
   const [seventh, setSeventh] = useState(initialSeventh)
-  const [guides, setGuides] = useState(false)
+  const [guides, setGuides] = useState(initialGuides)
   const [minor, setMinor] = useState(initialMinor)
   const [names, setNames] = useState(false)
   const [zoneStart, setZoneStart] = useState(initialZoneStart)

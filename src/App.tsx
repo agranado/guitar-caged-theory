@@ -1,41 +1,87 @@
-import DegreeLens from './components/DegreeLens'
-import TriadWindows from './components/TriadWindows'
-import BoxView from './components/BoxView'
+import { useEffect, useState } from 'react'
+import { MODULES } from './content/curriculum'
+import './components/lesson.css'
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 style={{ fontSize: 'clamp(17px, 2vw, 22px)', margin: '38px 0 4px' }}>{children}</h2>
-  )
+function currentIdFromHash(): string {
+  const h = window.location.hash.replace(/^#/, '')
+  return MODULES.some((m) => m.id === h) ? h : 'overview'
 }
 
 export default function App() {
+  const [currentId, setCurrentId] = useState<string>(currentIdFromHash)
+
+  useEffect(() => {
+    const onHash = () => setCurrentId(currentIdFromHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  const go = (id: string) => {
+    window.location.hash = id
+    setCurrentId(id)
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch {
+      // jsdom / unsupported: no-op
+    }
+  }
+
+  const idx = MODULES.findIndex((m) => m.id === currentId)
+  const mod = MODULES[idx]
+  const prev = idx > 0 ? MODULES[idx - 1] : null
+  const next = idx < MODULES.length - 1 ? MODULES[idx + 1] : null
+  const navNum = (m: (typeof MODULES)[number]) => (m.num === 'overview' ? '◆' : String(m.num))
+
   return (
-    <main style={{ padding: '28px clamp(12px, 4vw, 48px) 80px', maxWidth: 1100, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 'clamp(22px, 3.2vw, 34px)', fontWeight: 700 }}>
-        Degree Lens <span style={{ fontWeight: 300, color: 'var(--ink-dim)' }}>— one map, seven overlays</span>
-      </h1>
-      <p style={{ color: 'var(--ink-dim)', margin: '6px 0 22px', maxWidth: '70ch', lineHeight: 1.5 }}>
-        The full parent-scale map stays lit. Pick a chord and its degree-trio glows — same map,
-        different glow. Step the progression with <kbd>←</kbd> <kbd>→</kbd> (or <kbd>space</kbd> for
-        the silent metronome) and watch the <span style={{ color: 'var(--fresh)' }}>fresh note</span>{' '}
-        announce each change. Everything is a scale <b>degree</b>; note names are one toggle away.
-      </p>
+    <div className="app-shell">
+      <aside className="app-sidebar">
+        <div className="app-brand">
+          Degree Lens
+          <span className="thin">one map, seven overlays</span>
+        </div>
+        <nav className="app-nav" aria-label="Modules">
+          {MODULES.map((m) => (
+            <button
+              key={m.id}
+              className={'app-navitem' + (m.id === currentId ? ' active' : '')}
+              aria-current={m.id === currentId ? 'page' : undefined}
+              onClick={() => go(m.id)}
+            >
+              <span className="app-navnum">{navNum(m)}</span>
+              <span className="app-navtitle">{m.title}</span>
+            </button>
+          ))}
+        </nav>
+      </aside>
 
-      <DegreeLens />
+      <main className="lesson">
+        <header className="lesson-head">
+          <div className="lesson-eyebrow">
+            {mod.num === 'overview' ? 'Framework' : `Module ${mod.num}`}
+          </div>
+          <h1 className="lesson-title">{mod.title}</h1>
+          <div className="lesson-sub">{mod.subtitle}</div>
+        </header>
 
-      <SectionTitle>Triad windows — nine places to play any chord</SectionTitle>
-      <p style={{ color: 'var(--ink-dim)', margin: '0 0 14px', maxWidth: '70ch', lineHeight: 1.5 }}>
-        Every window is just the chord's degree-trio clustered — three string sets × three
-        inversions. Not new shapes; the same constellation, closer or farther.
-      </p>
-      <TriadWindows />
+        <mod.Body />
 
-      <SectionTitle>The box — home base</SectionTitle>
-      <p style={{ color: 'var(--ink-dim)', margin: '0 0 14px', maxWidth: '70ch', lineHeight: 1.5 }}>
-        One position, seven overlays. With nowhere to run you make the changes with note choice,
-        not position shifts — which is precisely the skill.
-      </p>
-      <BoxView />
-    </main>
+        <div className="app-pager">
+          {prev ? (
+            <button className="app-pagerbtn" onClick={() => go(prev.id)}>
+              <small>← previous</small>
+              {prev.title}
+            </button>
+          ) : (
+            <span />
+          )}
+          {next && (
+            <button className="app-pagerbtn next" onClick={() => go(next.id)}>
+              <small>next →</small>
+              {next.title}
+            </button>
+          )}
+        </div>
+      </main>
+    </div>
   )
 }
