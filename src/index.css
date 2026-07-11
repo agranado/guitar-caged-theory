@@ -1,0 +1,52 @@
+/* Degree Lens — dark stage aesthetic. Design tokens shared app-wide. */
+:root {
+  --stage: #0f141b;
+  --panel: #161d27;
+  --panel-2: #1b2430;
+  --line: #26303d;
+  --ink: #dde4ec;
+  --ink-dim: #8b96a5;
+  --ink-faint: #5a6675;
+  --scale-dot: #3d4756;
+  --scale-txt: #93a0b0;
+  --tone: #e8a33d;
+  --tone-txt: #241a06;
+  --root: #ffd166;
+  --root-txt: #2a1f04;
+  --guide: #5fd3c4;
+  --minor: #b78cf2;
+  --fresh: #ff9e5e;
+  --board: #191410;
+  --fretwire: #6e6250;
+  --string: #7d8894;
+
+  color-scheme: dark;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink);
+  background: var(--stage);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--stage);
+  color: var(--ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--tone);
+}
