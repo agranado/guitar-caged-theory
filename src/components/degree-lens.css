@@ -1,0 +1,188 @@
+/* Degree Lens interactive widget */
+
+.dl {
+  --gap: 12px;
+}
+
+.dl-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.dl-bar label {
+  color: var(--ink-dim);
+  font-size: 12px;
+}
+
+.dl select,
+.dl input[type='range'] {
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: inherit;
+}
+.dl input[type='range'] {
+  padding: 0;
+  accent-color: var(--tone);
+}
+
+.dl-tog {
+  background: var(--panel-2);
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dl-tog[aria-pressed='true'] {
+  color: var(--stage);
+  background: var(--ink);
+  border-color: var(--ink);
+  font-weight: 600;
+}
+.dl-tog.minor[aria-pressed='true'] {
+  background: var(--minor);
+  border-color: var(--minor);
+}
+.dl-tog.guide[aria-pressed='true'] {
+  background: var(--guide);
+  border-color: var(--guide);
+}
+
+.dl-spacer {
+  flex: 1;
+}
+
+.dl-boardwrap {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 10px 6px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+}
+
+.dl-legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 10px 4px 0;
+  color: var(--ink-dim);
+  font-size: 12px;
+  align-items: center;
+}
+.dl-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dl-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.dl-chips .dl-tag {
+  color: var(--ink-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-right: 4px;
+  width: 88px;
+}
+.dl-chip {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 14px 7px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  font: inherit;
+}
+.dl-chip small {
+  display: block;
+  color: var(--ink-dim);
+  font-size: 11px;
+  margin-top: 2px;
+}
+.dl-chip.active {
+  border-color: var(--tone);
+  background: #2a2211;
+  box-shadow: 0 0 0 1px var(--tone), 0 0 18px rgba(232, 163, 61, 0.25);
+}
+.dl-chip.active small {
+  color: var(--tone);
+}
+
+.dl-info {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--tone);
+  border-radius: 10px;
+  padding: 14px 16px;
+  line-height: 1.6;
+}
+.dl-info b {
+  color: var(--tone);
+}
+.dl-info .g {
+  color: var(--guide);
+}
+.dl-info .f {
+  color: var(--fresh);
+}
+
+/* fresh-note pulse */
+@keyframes dl-pulse {
+  0% {
+    r: 13;
+  }
+  50% {
+    r: 16.5;
+  }
+  100% {
+    r: 13;
+  }
+}
+.dl-fresh {
+  animation: dl-pulse 0.9s ease-in-out 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dl-fresh {
+    animation: none;
+  }
+  .dl-chip,
+  .dl-tog {
+    transition: none;
+  }
+}
+
+kbd {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+}

@@ -196,6 +196,44 @@ export function minorLensLabel(d: Degree): string {
   return MINOR_LENS[d]
 }
 
+/** Human-readable chord name in a key, e.g. ("D","IV",false) -> "G". */
+export function chordName(key: string, roman: string, seventh = false): string {
+  const n = romanToDegree(roman)
+  const base = noteNameOfDegree(key, n)
+  if (SPECIALS[roman] || /sus2/i.test(roman)) return base + 'sus2'
+  return base + (seventh ? QUALITY7[n] : QUALITY[n])
+}
+
+/** A fully-resolved chord overlay: what glows, the guide tones, the name. */
+export interface Overlay {
+  roman: string
+  root: Degree
+  degrees: Degree[]
+  guides: Degree[]
+  name: string
+}
+
+/**
+ * Resolve a roman numeral (optionally with the 7th toggled on) into everything
+ * a component needs to render its overlay. The single entry point components
+ * use — they never assemble chords by hand.
+ */
+export function resolveOverlay(key: string, roman: string, seventh: boolean): Overlay {
+  const isSpecial = !!SPECIALS[roman]
+  const alreadyHasQuality = /7|sus/i.test(roman)
+  const withSeventh = seventh && !isSpecial && !alreadyHasQuality ? roman + '7' : roman
+  return {
+    roman,
+    root: romanToDegree(roman),
+    degrees: chordDegrees(withSeventh),
+    guides: guideTones(roman),
+    name: chordName(key, roman, seventh),
+  }
+}
+
+/** The seven diatonic roman numerals, I..vii°. */
+export const DIATONIC_ROMANS: string[] = [1, 2, 3, 4, 5, 6, 7].map((n) => ROMAN[n as Degree])
+
 /** Degrees present in `next` that were not in `prev` — the change-announcers. */
 export function freshNotes(prev: Degree[], next: Degree[]): Degree[] {
   const prevSet = new Set(prev)

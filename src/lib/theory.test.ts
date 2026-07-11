@@ -9,6 +9,8 @@ import {
   freshNotes,
   triadWindows,
   noteNameOfDegree,
+  chordName,
+  resolveOverlay,
   SPECIALS,
 } from './theory'
 import type { Degree } from './theory'
@@ -140,5 +142,41 @@ describe('noteNameOfDegree', () => {
 describe('SPECIALS registry', () => {
   it('exposes Isus2 as [1,2,5]', () => {
     expect(SPECIALS.Isus2.degrees).toEqual([1, 2, 5])
+  })
+})
+
+describe('chordName', () => {
+  it('names diatonic chords in D', () => {
+    expect(chordName('D', 'I')).toBe('D')
+    expect(chordName('D', 'IV')).toBe('G')
+    expect(chordName('D', 'V')).toBe('A')
+    expect(chordName('D', 'vi')).toBe('Bm')
+    expect(chordName('D', 'vii°')).toBe('C♯°')
+  })
+  it('adds 7th qualities', () => {
+    expect(chordName('D', 'V', true)).toBe('A7')
+    expect(chordName('D', 'ii', true)).toBe('Em7')
+    expect(chordName('D', 'I', true)).toBe('Dmaj7')
+  })
+  it('names Isus2 as Dsus2 in D', () => {
+    expect(chordName('D', 'Isus2')).toBe('Dsus2')
+  })
+})
+
+describe('resolveOverlay', () => {
+  it('resolves IV in D with no 7th', () => {
+    expect(resolveOverlay('D', 'IV', false)).toEqual({
+      roman: 'IV',
+      root: 4,
+      degrees: [4, 6, 1],
+      guides: [6, 3],
+      name: 'G',
+    })
+  })
+  it('adds the 7th when toggled', () => {
+    expect(resolveOverlay('D', 'V', true).degrees).toEqual([5, 7, 2, 4])
+  })
+  it('never adds a 7th to a special (Isus2)', () => {
+    expect(resolveOverlay('D', 'Isus2', true).degrees).toEqual([1, 2, 5])
   })
 })
