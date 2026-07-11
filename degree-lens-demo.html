@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Degree Lens — One Map, Seven Overlays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stage:#0f141b; --panel:#161d27; --panel-2:#1b2430; --line:#26303d;
+    --ink:#dde4ec; --ink-dim:#8b96a5; --ink-faint:#5a6675;
+    --scale-dot:#3d4756; --scale-txt:#93a0b0;
+    --tone:#e8a33d; --tone-txt:#241a06;
+    --root:#ffd166; --root-txt:#2a1f04;
+    --guide:#5fd3c4; --minor:#b78cf2;
+    --fresh:#ff9e5e;
+    --board:#191410; --fretwire:#6e6250; --string:#7d8894;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--stage); color:var(--ink);
+    font-family:'JetBrains Mono', monospace; font-size:14px;
+    min-height:100vh; padding:28px clamp(12px,4vw,48px) 60px;
+  }
+  h1{
+    font-family:'Bricolage Grotesque', sans-serif; font-weight:700;
+    font-size:clamp(22px,3.2vw,34px); letter-spacing:-.01em;
+  }
+  h1 .thin{font-weight:300; color:var(--ink-dim);}
+  .sub{color:var(--ink-dim); margin:6px 0 22px; max-width:70ch; line-height:1.5;}
+  .bar{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:12px 14px; margin-bottom:14px;
+  }
+  .bar label{color:var(--ink-dim); font-size:12px;}
+  select{
+    background:var(--panel-2); color:var(--ink); border:1px solid var(--line);
+    border-radius:8px; padding:6px 10px; font:inherit;
+  }
+  .tog{
+    background:var(--panel-2); color:var(--ink-dim); border:1px solid var(--line);
+    border-radius:8px; padding:6px 12px; font:inherit; cursor:pointer;
+    transition:all .15s;
+  }
+  .tog[aria-pressed="true"]{color:var(--stage); background:var(--ink); border-color:var(--ink); font-weight:600;}
+  .tog.minor[aria-pressed="true"]{background:var(--minor); border-color:var(--minor);}
+  .tog.guide[aria-pressed="true"]{background:var(--guide); border-color:var(--guide);}
+  .boardwrap{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:16px 10px 6px; overflow-x:auto; margin-bottom:14px;
+  }
+  svg{display:block; min-width:900px; width:100%; height:auto;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px;}
+  .chips .tag{color:var(--ink-faint); font-size:11px; text-transform:uppercase; letter-spacing:.12em; margin-right:4px; width:88px;}
+  .chip{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--ink);
+    border-radius:10px; padding:8px 14px 7px; cursor:pointer; text-align:center;
+    transition:all .15s; font:inherit;
+  }
+  .chip small{display:block; color:var(--ink-dim); font-size:11px; margin-top:2px;}
+  .chip.active{border-color:var(--tone); background:#2a2211; box-shadow:0 0 0 1px var(--tone), 0 0 18px rgba(232,163,61,.25);}
+  .chip.active small{color:var(--tone);}
+  .stepbtn{background:none; border:1px solid var(--line); color:var(--ink-dim); border-radius:8px; padding:8px 11px; cursor:pointer; font:inherit;}
+  .stepbtn:hover{color:var(--ink);}
+  .info{
+    background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--tone);
+    border-radius:10px; padding:14px 16px; line-height:1.6; max-width:900px;
+  }
+  .info b{color:var(--tone);}
+  .info .g{color:var(--guide);}
+  .info .f{color:var(--fresh);}
+  .legend{display:flex; gap:18px; flex-wrap:wrap; margin:10px 4px 0; color:var(--ink-dim); font-size:12px; align-items:center;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:14px;height:14px;border-radius:50%;display:inline-block;}
+  @keyframes pulse{0%{r:13;}50%{r:16;}100%{r:13;}}
+  .freshpulse{animation:pulse .9s ease-in-out 2;}
+  @media (prefers-reduced-motion: reduce){ .freshpulse{animation:none;} .chip,.tog{transition:none;} }
+  kbd{background:var(--panel-2); border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:11px;}
+</style>
+</head>
+<body>
+  <h1>Degree Lens <span class="thin">— one map, seven overlays</span></h1>
+  <p class="sub">The full parent-scale map stays lit. Pick a chord and its degree-trio glows — same map, different glow. Step the progression with <kbd>←</kbd> <kbd>→</kbd> and watch the <span style="color:var(--fresh)">fresh note</span> announce each change.</p>
+
+  <div class="bar">
+    <label>Key</label>
+    <select id="keySel"></select>
+    <button class="tog" id="togNames" aria-pressed="false">note names</button>
+    <button class="tog" id="tog7" aria-pressed="false">add 7ths</button>
+    <button class="tog guide" id="togGuide" aria-pressed="false">guide tones</button>
+    <button class="tog minor" id="togMinor" aria-pressed="false">minor lens</button>
+  </div>
+
+  <div class="boardwrap"><svg id="board" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--root)"></span>chord root</span>
+      <span><span class="dot" style="background:var(--tone)"></span>chord tone</span>
+      <span><span class="dot" style="background:var(--panel-2);box-shadow:0 0 0 2.5px var(--guide)"></span>guide tone (3rd &amp; 7th)</span>
+      <span><span class="dot" style="background:var(--scale-dot)"></span>scale tone (resting)</span>
+    </div>
+  </div>
+
+  <div class="chips" id="progRow"><span class="tag">Progression</span></div>
+  <div class="chips" id="diatonicRow"><span class="tag">All chords</span></div>
+
+  <div class="info" id="info"></div>
+
+<script>
+(function(){
+  const NOTES = ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+  const MAJ = [0,2,4,5,7,9,11];
+  const OPEN = [4,11,7,2,9,4]; // high e, B, G, D, A, low E
+  const STR_NAMES = ["e","B","G","D","A","E"];
+  const FRETS = 15;
+  const MINOR_LABEL = {6:"1",7:"2",1:"♭3",2:"4",3:"5",4:"♭6",5:"♭7"};
+  const wrap = d => ((d-1)%7+7)%7+1;
+  const QUAL = {1:"",2:"m",3:"m",4:"",5:"",6:"m",7:"°"};
+  const QUAL7 = {1:"maj7",2:"m7",3:"m7",4:"maj7",5:"7",6:"m7",7:"m7♭5"};
+  const ROMAN = {1:"I",2:"ii",3:"iii",4:"IV",5:"V",6:"vi",7:"vii°"};
+
+  // chord model: {id, root, degrees, guides, label(fn), tip}
+  function diatonic(n, seventh){
+    const degs = [n, wrap(n+2), wrap(n+4)];
+    if(seventh) degs.push(wrap(n+6));
+    return degs;
+  }
+  const TIPS = {
+    "Isus2":"No 3rd — the chord floats. Your melody can supply <b>3</b> and *be* the resolution, or rest on <b>1</b>.",
+    "vi7":"Contains the entire I triad (1·3·5) plus <b>6</b>. Anything that worked over I works here — just land on <b>6</b> to announce the minor turn.",
+    "IV":"The pentatonic-forbidden <b>4</b> is now the root of the harmony. Land on <b>4</b>, or on <b>6</b> (shared with the previous chord — silky voice leading).",
+    "V":"Tension engine. <b>7</b> is the leading tone — sit on it, then resolve 7→1 as the loop restarts. That half step is the sound of 'following the changes'.",
+    "I":"Home. <b>3</b> announces major; <b>1</b> is full rest. Ending phrases on <b>5</b> keeps things open.",
+    "ii":"Sub-dominant motion. Guide tones <span class='g'>4</span> and <span class='g'>1</span>: the 1 will fall to 7 when V arrives.",
+    "iii":"Dreamy middle ground — shares two tones with I. <b>7</b> gives it its color.",
+    "vi":"The minor home. Under the minor lens this is your tonic (minor 1 = major 6).",
+    "vii°":"Rare as a landing zone; great as a passing sound. Its tones (7·2·4) are exactly V7's upper structure."
+  };
+
+  const state = {
+    keyPc: 2,             // D
+    chord: null,          // current chord object
+    seventh:false, guides:false, minor:false, names:false,
+    progIdx: 0, prevDegrees: []
+  };
+
+  const PROG = [
+    {id:"Isus2", root:1, degrees:[1,2,5], guides:[2], name:(k)=>noteName(1)+"sus2", roman:"Isus2"},
+    {id:"vi7",  root:6, degrees:[6,1,3,5], guides:[1,5], name:(k)=>noteName(6)+"m7", roman:"vi7"},
+    {id:"IV",   root:4, degrees:null, guides:null, name:(k)=>noteName(4)+(state.seventh?"maj7":""), roman:"IV"},
+    {id:"V",    root:5, degrees:null, guides:null, name:(k)=>noteName(5)+(state.seventh?"7":""), roman:"V"},
+  ];
+
+  function scalePcs(){ return MAJ.map(i => (state.keyPc+i)%12); }
+  function noteName(deg){ return NOTES[scalePcs()[deg-1]]; }
+  function degreeAt(s, f){
+    const pc = (OPEN[s]+f)%12;
+    const idx = scalePcs().indexOf(pc);
+    return idx === -1 ? null : idx+1;
+  }
+  function chordFor(n){ // diatonic chord object
+    return {
+      id: ROMAN[n], root:n,
+      degrees: diatonic(n, state.seventh),
+      guides: [wrap(n+2), wrap(n-1)],
+      name: ()=> noteName(n) + (state.seventh ? QUAL7[n] : QUAL[n]),
+      roman: ROMAN[n]
+    };
+  }
+  function resolveChord(c){ // fill dynamic fields for specials
+    return {
+      ...c,
+      degrees: c.degrees || diatonic(c.root, state.seventh),
+      guides: c.guides || [wrap(c.root+2), wrap(c.root-1)]
+    };
+  }
+  function label(deg){
+    if(state.names) return noteName(deg);
+    return state.minor ? MINOR_LABEL[deg] : String(deg);
+  }
+
+  // ---------- render fretboard ----------
+  const NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent){
+    const e = document.createElementNS(NS, tag);
+    for(const k in attrs) e.setAttribute(k, attrs[k]);
+    if(parent) parent.appendChild(e);
+    return e;
+  }
+  function renderBoard(freshSet){
+    const svg = document.getElementById("board");
+    svg.innerHTML = "";
+    const L=56, FW=58, TOP=26, SS=32;
+    const W = L + FRETS*FW + 16, H = TOP + 5*SS + 44;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+
+    // board wood
+    el("rect",{x:L, y:TOP-14, width:FRETS*FW, height:5*SS+28, rx:4, fill:"var(--board)"}, svg);
+    // frets
+    for(let f=0; f<=FRETS; f++){
+      const x = L + f*FW;
+      el("rect",{x:x-(f===0?3:1), y:TOP-14, width:(f===0?5:2), height:5*SS+28,
+        fill: f===0 ? "#c9cfd6" : "var(--fretwire)"}, svg);
+    }
+    // inlays
+    [3,5,7,9,15].forEach(f=>{
+      el("circle",{cx:L+(f-0.5)*FW, cy:TOP+2.5*SS, r:5, fill:"#332a20"}, svg);
+    });
+    el("circle",{cx:L+11.5*FW, cy:TOP+1.5*SS, r:5, fill:"#332a20"}, svg);
+    el("circle",{cx:L+11.5*FW, cy:TOP+3.5*SS, r:5, fill:"#332a20"}, svg);
+    // strings + labels
+    for(let s=0; s<6; s++){
+      const y = TOP + s*SS;
+      el("rect",{x:L, y:y-0.4-(s*0.18), width:FRETS*FW, height:1+s*0.45, fill:"var(--string)", opacity:.8}, svg);
+      const t = el("text",{x:L-40, y:y+4, fill:"var(--ink-faint)", "font-size":"11", "font-family":"JetBrains Mono"}, svg);
+      t.textContent = STR_NAMES[s];
+    }
+    // fret numbers
+    [3,5,7,9,12,15].forEach(f=>{
+      const t = el("text",{x:L+(f-0.5)*FW, y:H-8, fill:"var(--ink-faint)", "font-size":"11",
+        "text-anchor":"middle", "font-family":"JetBrains Mono"}, svg);
+      t.textContent = f;
+    });
+
+    const c = resolveChord(state.chord);
+    const tones = new Set(c.degrees), guides = new Set(c.guides);
+    for(let s=0; s<6; s++){
+      for(let f=0; f<=FRETS; f++){
+        const d = degreeAt(s,f);
+        if(d===null) continue;
+        const cx = f===0 ? L-18 : L+(f-0.5)*FW;
+        const cy = TOP + s*SS;
+        const isTone = tones.has(d), isRoot = d===c.root;
+        const isGuide = state.guides && guides.has(d) && isTone;
+        const isFresh = freshSet && freshSet.has(d) && isTone;
+        const minorTonic = state.minor && d===6;
+        let r = isTone?13:8.5;
+        let fill = isTone ? (isRoot ? "var(--root)" : "var(--tone)") : "var(--scale-dot)";
+        if(minorTonic && isTone) fill = "var(--minor)";
+        const g = el("g",{}, svg);
+        const circ = el("circle",{cx,cy,r,fill, opacity: isTone?1:0.85}, g);
+        if(isGuide) el("circle",{cx,cy,r:r+3.5, fill:"none", stroke:"var(--guide)","stroke-width":2.4}, g);
+        if(isFresh){ circ.classList.add("freshpulse"); el("circle",{cx,cy,r:r+7, fill:"none", stroke:"var(--fresh)","stroke-width":1.6, opacity:.8}, g); }
+        const t = el("text",{x:cx, y:cy+(isTone?4.4:3.4), "text-anchor":"middle",
+          fill: isTone ? "var(--tone-txt)" : "var(--scale-txt)",
+          "font-size": isTone? "12" : "9", "font-weight": isTone? "700":"400",
+          "font-family":"JetBrains Mono"}, g);
+        t.textContent = label(d);
+      }
+    }
+  }
+
+  // ---------- chips ----------
+  function chipHTML(c){
+    const rc = resolveChord(c);
+    return `${c.name()}<small>${c.roman} · ${rc.degrees.map(label).join("·")}</small>`;
+  }
+  function renderChips(){
+    const prog = document.getElementById("progRow");
+    prog.querySelectorAll(".chip,.stepbtn").forEach(n=>n.remove());
+    const back = document.createElement("button"); back.className="stepbtn"; back.textContent="←";
+    back.onclick=()=>step(-1); prog.appendChild(back);
+    PROG.forEach((c,i)=>{
+      const b = document.createElement("button");
+      b.className = "chip" + (state.chord && state.chord.id===c.id ? " active":"");
+      b.innerHTML = chipHTML(c);
+      b.onclick = ()=>{ setChord(c); state.progIdx=i; };
+      prog.appendChild(b);
+    });
+    const fwd = document.createElement("button"); fwd.className="stepbtn"; fwd.textContent="→";
+    fwd.onclick=()=>step(1); prog.appendChild(fwd);
+
+    const dia = document.getElementById("diatonicRow");
+    dia.querySelectorAll(".chip").forEach(n=>n.remove());
+    for(let n=1; n<=7; n++){
+      const c = chordFor(n);
+      const b = document.createElement("button");
+      b.className = "chip" + (state.chord && state.chord.id===c.id ? " active":"");
+      b.innerHTML = chipHTML(c);
+      b.onclick = ()=>setChord(c);
+      dia.appendChild(b);
+    }
+  }
+
+  function renderInfo(freshSet){
+    const c = resolveChord(state.chord);
+    const tip = TIPS[c.id] || "";
+    const fresh = freshSet && freshSet.size
+      ? ` Fresh vs. previous chord: <span class="f">${[...freshSet].map(label).join(", ")}</span>.` : "";
+    const guides = c.guides.map(g=>`<span class="g">${label(g)}</span>`).join(" & ");
+    document.getElementById("info").innerHTML =
+      `<b>${c.name()}</b> (${c.roman}) → glow <b>${c.degrees.map(label).join(" · ")}</b>. ` +
+      `Guide tones: ${guides}. ${tip}${fresh}`;
+  }
+
+  function setChord(c, opts){
+    const prev = state.chord ? new Set(resolveChord(state.chord).degrees) : new Set();
+    state.chord = c;
+    const now = resolveChord(c).degrees;
+    const fresh = new Set(now.filter(d=>!prev.has(d)));
+    renderBoard(opts && opts.noFresh ? null : fresh);
+    renderChips();
+    renderInfo(opts && opts.noFresh ? null : fresh);
+  }
+  function step(dir){
+    state.progIdx = ((state.progIdx + dir) % PROG.length + PROG.length) % PROG.length;
+    setChord(PROG[state.progIdx]);
+  }
+
+  // ---------- controls ----------
+  const keySel = document.getElementById("keySel");
+  NOTES.forEach((n,i)=>{
+    const o = document.createElement("option"); o.value=i; o.textContent=n+" major"+(state.minor?"":"");
+    keySel.appendChild(o);
+  });
+  keySel.value = 2;
+  keySel.onchange = ()=>{ state.keyPc = +keySel.value; setChord(state.chord,{noFresh:true}); };
+  function bindTog(id, key){
+    const b = document.getElementById(id);
+    b.onclick = ()=>{
+      state[key] = !state[key];
+      b.setAttribute("aria-pressed", state[key]);
+      setChord(state.chord,{noFresh:true});
+    };
+  }
+  bindTog("togNames","names"); bindTog("tog7","seventh");
+  bindTog("togGuide","guides"); bindTog("togMinor","minor");
+  document.addEventListener("keydown", e=>{
+    if(e.key==="ArrowRight"){ step(1); e.preventDefault(); }
+    if(e.key==="ArrowLeft"){ step(-1); e.preventDefault(); }
+  });
+
+  setChord(PROG[0], {noFresh:true});
+})();
+</script>
+</body>
+</html>
