@@ -245,3 +245,41 @@ kbd {
   outline-offset: 4px;
   border-radius: 12px;
 }
+
+/* triad windows (Module 5) */
+.tw-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tw-setrow {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px 12px;
+}
+.tw-setlabel {
+  color: var(--ink-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+}
+.tw-windows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.tw-fig {
+  margin: 0;
+  text-align: center;
+}
+.tw-fig svg {
+  background: var(--board);
+  border-radius: 8px;
+}
+.tw-cap {
+  color: var(--ink-dim);
+  font-size: 11px;
+  margin-top: 4px;
+}
