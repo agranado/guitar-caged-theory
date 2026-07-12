@@ -1,0 +1,304 @@
+/* Lesson typography, sidebar nav, and layout */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: 28px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px clamp(12px, 3vw, 40px) 80px;
+  align-items: start;
+}
+
+.app-sidebar {
+  position: sticky;
+  top: 24px;
+}
+.app-brand {
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+.app-brand .thin {
+  font-weight: 300;
+  color: var(--ink-dim);
+  display: block;
+  font-size: 12px;
+}
+.app-nav {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.app-navitem {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--ink-dim);
+  padding: 8px 10px;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.12s, color 0.12s;
+}
+.app-navitem:hover {
+  background: var(--panel);
+  color: var(--ink);
+}
+.app-navitem.active {
+  background: var(--panel);
+  color: var(--ink);
+  border-left-color: var(--tone);
+}
+.app-navitem.practice {
+  color: var(--tone);
+  margin-bottom: 8px;
+}
+.app-navitem.practice .app-navnum {
+  color: var(--tone);
+}
+.app-navitem.practice.active {
+  border-left-color: var(--tone);
+}
+.app-navnum {
+  font-size: 11px;
+  color: var(--ink-faint);
+  min-width: 14px;
+}
+.app-navitem.active .app-navnum {
+  color: var(--tone);
+}
+.app-navtitle {
+  font-size: 13px;
+}
+
+.lesson {
+  min-width: 0;
+}
+.lesson-head {
+  margin-bottom: 18px;
+}
+.lesson-eyebrow {
+  color: var(--ink-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.lesson-title {
+  font-size: clamp(24px, 3.4vw, 34px);
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+.lesson-sub {
+  color: var(--ink-dim);
+  margin-top: 4px;
+}
+
+.ls-p {
+  line-height: 1.62;
+  margin: 0 0 14px;
+  max-width: 72ch;
+  color: var(--ink);
+}
+.ls-h3 {
+  font-size: 17px;
+  margin: 26px 0 8px;
+}
+.ls-deg {
+  color: var(--tone);
+  font-family: 'JetBrains Mono', monospace;
+}
+.ls-callout {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--guide);
+  border-radius: 10px;
+  padding: 13px 16px;
+  line-height: 1.6;
+  margin: 16px 0;
+  max-width: 72ch;
+}
+.ls-callout b {
+  color: var(--ink);
+}
+
+.ls-tab {
+  background: var(--board);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 14px 0;
+}
+.ls-tab code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--scale-txt);
+  white-space: pre;
+}
+
+.ls-tablewrap {
+  overflow-x: auto;
+  margin: 14px 0;
+}
+.ls-table {
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 420px;
+}
+.ls-table th {
+  text-align: left;
+  color: var(--ink-faint);
+  font-weight: 600;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.ls-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+.ls-roman {
+  color: var(--tone);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+.ls-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+.ls-guide {
+  color: var(--guide);
+}
+
+.ls-checklist {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px 16px;
+  margin: 22px 0 0;
+  max-width: 72ch;
+}
+.ls-checkhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+}
+.ls-checkcount {
+  color: var(--tone);
+  font-family: 'JetBrains Mono', monospace;
+}
+.ls-checklist ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ls-checklist li label {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.ls-checklist input[type='checkbox'] {
+  margin-top: 3px;
+  accent-color: var(--tone);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+.ls-done {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+}
+.ls-donewhen {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  line-height: 1.55;
+  color: var(--ink-dim);
+}
+.ls-donelabel {
+  color: var(--guide);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-right: 6px;
+}
+
+.app-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 36px;
+}
+.app-pagerbtn {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font: inherit;
+  max-width: 48%;
+  text-align: left;
+}
+.app-pagerbtn:hover {
+  border-color: var(--tone);
+}
+.app-pagerbtn small {
+  display: block;
+  color: var(--ink-faint);
+  font-size: 11px;
+}
+.app-pagerbtn.next {
+  text-align: right;
+  margin-left: auto;
+}
+
+/* mobile: sidebar becomes a horizontal scroller on top */
+@media (max-width: 760px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .app-sidebar {
+    position: static;
+  }
+  .app-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 6px;
+    padding-bottom: 6px;
+  }
+  .app-navitem {
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 8px 8px 0 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .app-navitem.active {
+    border-left-color: transparent;
+    border-bottom-color: var(--tone);
+  }
+  .app-navtitle {
+    display: none;
+  }
+  .app-navnum {
+    font-size: 13px;
+  }
+}

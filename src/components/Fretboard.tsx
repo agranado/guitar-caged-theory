@@ -1,12 +1,16 @@
 import { useMemo } from 'react'
 import {
+  CHARACTER_BY_DEGREE,
   FRETS,
   STRING_NAME_BY_NUMBER,
   degreeAt,
   minorLensLabel,
   noteNameOfDegree,
+  wrap,
 } from '../lib/theory'
 import type { Degree, Overlay } from '../lib/theory'
+
+export type ColorMode = 'current' | 'function' | 'people'
 
 export interface FretboardProps {
   keyName: string
@@ -14,6 +18,8 @@ export interface FretboardProps {
   showGuides: boolean
   showNames: boolean
   minorLens: boolean
+  /** How chord tones are coloured (default 'current'). */
+  colorMode?: ColorMode
   /** Degrees to pulse as "fresh" when the overlay just changed. */
   freshSet?: Set<Degree>
   /** Bumped on each overlay change so the fresh-note pulse replays. */
@@ -39,6 +45,7 @@ export default function Fretboard({
   showGuides,
   showNames,
   minorLens,
+  colorMode = 'current',
   freshSet,
   pulseId = 0,
   zone = null,
@@ -58,6 +65,18 @@ export default function Fretboard({
   const tones = useMemo(() => new Set(chord.degrees), [chord])
   const guides = useMemo(() => new Set(chord.guides), [chord])
 
+  // Harmonic roles of this chord's tones, for colour-by-function.
+  const root = chord.root
+  const has = (d: Degree): Degree | null => (tones.has(d) ? d : null)
+  const thirdDeg = has(wrap(root + 2))
+  const fifthDeg = has(wrap(root + 4))
+  const seventhDeg = has(wrap(root + 6))
+  const characterDeg: Degree = thirdDeg === null ? wrap(root + 1) : CHARACTER_BY_DEGREE[root]
+
+  type Role = 'root' | '3rd' | '5th' | '7th' | 'other'
+  const roleOf = (d: Degree): Role =>
+    d === root ? 'root' : d === thirdDeg ? '3rd' : d === seventhDeg ? '7th' : d === fifthDeg ? '5th' : 'other'
+
   const label = (d: Degree) =>
     showNames ? noteNameOfDegree(keyName, d) : minorLens ? minorLensLabel(d) : String(d)
 
@@ -71,29 +90,57 @@ export default function Fretboard({
       if (d === null) continue
       const cx = noteX(f)
       const isTone = tones.has(d)
-      const isRoot = d === chord.root
-      const isGuide = showGuides && isTone && guides.has(d)
+      const isRoot = d === root
+      const role = roleOf(d)
       const isFresh = !!freshSet && isTone && freshSet.has(d)
       const minorTonic = minorLens && d === 6 && isTone
+
+      // Fill + optional ring by colour mode.
+      let fill = 'var(--scale-dot)'
+      let ring: { color: string; w: number } | null = null
+      if (isTone) {
+        if (colorMode === 'function') {
+          fill =
+            role === 'root' ? 'var(--root)'
+            : role === '3rd' ? 'var(--guide)'
+            : role === '7th' ? 'var(--tension)'
+            : role === '5th' ? 'var(--furniture)'
+            : 'var(--tone)'
+          if (d === characterDeg) ring = { color: 'var(--fresh)', w: 2 } // spotlight the flavour note
+        } else if (colorMode === 'people') {
+          fill = role === '3rd' || role === '7th' ? 'var(--guide)' : 'var(--furniture)'
+        } else {
+          // 'current'
+          fill = isRoot ? 'var(--root)' : 'var(--tone)'
+          if (minorTonic) fill = 'var(--minor)'
+          if (showGuides && guides.has(d)) ring = { color: 'var(--guide)', w: 2.4 }
+        }
+      }
+
       const r = isTone ? 13 : 8.5
-      let fill = isTone ? (isRoot ? 'var(--root)' : 'var(--tone)') : 'var(--scale-dot)'
-      if (minorTonic) fill = 'var(--minor)'
-      const key = isFresh ? `${stringNumber}-${f}-p${pulseId}` : `${stringNumber}-${f}`
+      // Tone dots remount on each overlay change so their glow fades in —
+      // the signature "same map, different glow" migration.
+      const key = isFresh || isTone ? `${stringNumber}-${f}-p${pulseId}` : `${stringNumber}-${f}`
       dots.push(
         <g key={key}>
           {isFresh && (
             <circle cx={cx} cy={cy} r={r + 7} fill="none" stroke="var(--fresh)" strokeWidth={1.6} opacity={0.8} />
           )}
           <circle
-            className={isFresh ? 'dl-fresh' : undefined}
+            className={
+              [isFresh ? 'dl-fresh' : '', isTone ? 'dl-dot' : '', isTone ? `dl-role-${role}` : '']
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
             cx={cx}
             cy={cy}
             r={r}
             fill={fill}
             opacity={isTone ? 1 : 0.85}
+            style={isTone ? { filter: `drop-shadow(0 0 ${isRoot ? 6 : 4}px ${fill})` } : undefined}
           />
-          {isGuide && (
-            <circle cx={cx} cy={cy} r={r + 3.5} fill="none" stroke="var(--guide)" strokeWidth={2.4} />
+          {ring && (
+            <circle cx={cx} cy={cy} r={r + 3.5} fill="none" stroke={ring.color} strokeWidth={ring.w} />
           )}
           <text
             x={cx}

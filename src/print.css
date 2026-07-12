@@ -1,0 +1,82 @@
+/* Print stylesheet — turn the workbook into clean paper charts.
+   Keeps the fretboards and tables; drops the interactive chrome. */
+@media print {
+  :root {
+    /* ink on paper */
+    --stage: #fff;
+    --panel: #fff;
+    --panel-2: #fff;
+    --line: #bbb;
+    --ink: #111;
+    --ink-dim: #333;
+    --ink-faint: #666;
+    --board: #f4f1ec;
+    --string: #999;
+    --fretwire: #999;
+    --scale-dot: #cbd0d6;
+    --scale-txt: #444;
+    color-scheme: light;
+  }
+
+  body {
+    background: #fff;
+    color: #111;
+  }
+
+  /* drop interactive controls that mean nothing on paper */
+  .dl-bar,
+  .dl-stepper,
+  .app-nav,
+  .app-pager,
+  .dl-legend .dl-dot,
+  .app-navitem {
+    /* keep legend text but hide toggles/sliders/stepper */
+  }
+  .dl-bar,
+  .dl-stepper,
+  .app-pager {
+    display: none !important;
+  }
+
+  /* full neck on paper — no horizontal scroll windows */
+  .dl-boardwrap {
+    overflow: visible !important;
+    border-color: #ccc;
+  }
+  .dl-tonedot,
+  .dl-rootdot {
+    filter: none !important;
+    animation: none !important;
+  }
+
+  /* single-column layout, sidebar collapses to a header */
+  .app-shell {
+    display: block;
+    max-width: 100%;
+    padding: 0;
+  }
+  .app-sidebar {
+    position: static;
+    margin-bottom: 12px;
+  }
+
+  .ls-callout,
+  .ls-checklist,
+  .tw-setrow {
+    break-inside: avoid;
+  }
+  .lesson-head,
+  .ls-h3 {
+    break-after: avoid;
+  }
+
+  /* let each module start on a fresh page when printing the whole book */
+  .lesson {
+    break-before: auto;
+  }
+
+  a {
+    color: #111;
+    text-decoration: none;
+  }
+}

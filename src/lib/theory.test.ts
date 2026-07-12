@@ -11,6 +11,7 @@ import {
   noteNameOfDegree,
   chordName,
   resolveOverlay,
+  chordRoles,
   SPECIALS,
 } from './theory'
 import type { Degree } from './theory'
@@ -139,6 +140,18 @@ describe('noteNameOfDegree', () => {
   })
 })
 
+describe('chordRoles', () => {
+  it('IV in D: root 4, 3rd 6, 5th 1, no 7th, character 4', () => {
+    expect(chordRoles('IV')).toEqual({ root: 4, third: 6, fifth: 1, seventh: null, character: 4 })
+  })
+  it('V7: root 5, 3rd 7, 5th 2, 7th 4, character 7', () => {
+    expect(chordRoles('V', true)).toEqual({ root: 5, third: 7, fifth: 2, seventh: 4, character: 7 })
+  })
+  it('Isus2: no 3rd, character is the sus note (2)', () => {
+    expect(chordRoles('Isus2')).toEqual({ root: 1, third: null, fifth: 5, seventh: null, character: 2 })
+  })
+})
+
 describe('SPECIALS registry', () => {
   it('exposes Isus2 as [1,2,5]', () => {
     expect(SPECIALS.Isus2.degrees).toEqual([1, 2, 5])
@@ -160,6 +173,10 @@ describe('chordName', () => {
   })
   it('names Isus2 as Dsus2 in D', () => {
     expect(chordName('D', 'Isus2')).toBe('Dsus2')
+  })
+  it('honors a 7th carried in the roman itself (vi7 -> Bm7)', () => {
+    expect(chordName('D', 'vi7')).toBe('Bm7')
+    expect(chordName('D', 'V7')).toBe('A7')
   })
 })
 

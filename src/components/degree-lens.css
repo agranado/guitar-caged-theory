@@ -73,6 +73,40 @@
   margin-bottom: 14px;
 }
 
+/* colour-mode segmented control */
+.dl-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 10px;
+  padding: 3px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.dl-seglabel {
+  color: var(--ink-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0 8px 0 6px;
+}
+.dl-segbtn {
+  background: none;
+  border: none;
+  color: var(--ink-dim);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.12s, color 0.12s;
+}
+.dl-segbtn.active {
+  background: var(--ink);
+  color: var(--stage);
+  font-weight: 600;
+}
+
 .dl-legend {
   display: flex;
   gap: 18px;
@@ -153,7 +187,26 @@
   color: var(--fresh);
 }
 
-/* fresh-note pulse */
+/* overlay-switch: each trio fades/scales in as the glow migrates.
+   (The luminous drop-shadow is applied inline per fill colour so it matches
+   whichever colour mode is active.) */
+@keyframes dl-glowin {
+  0% {
+    opacity: 0.15;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.dl-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dl-glowin 0.34s ease-out;
+}
+
+/* fresh-note pulse — the "announce the change" note */
 @keyframes dl-pulse {
   0% {
     r: 13;
@@ -170,11 +223,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dl-fresh {
+  .dl-fresh,
+  .dl-dot {
     animation: none;
   }
   .dl-chip,
-  .dl-tog {
+  .dl-tog,
+  .dl-beatlamp {
     transition: none;
   }
 }
@@ -185,4 +240,101 @@ kbd {
   border-radius: 4px;
   padding: 1px 5px;
   font-size: 11px;
+}
+
+/* progression stepper */
+.dl-stepper {
+  margin-bottom: 14px;
+}
+.dl-stepbtn {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  border-radius: 8px;
+  padding: 8px 11px;
+  cursor: pointer;
+  font: inherit;
+}
+.dl-stepbtn:hover {
+  color: var(--ink);
+}
+.dl-progchip {
+  position: relative;
+  padding-top: 20px; /* room for the minor-world label */
+}
+.dl-minorlabel {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--minor);
+}
+.dl input[type='number'] {
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+}
+.dl-beatlamp {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--tone);
+  opacity: 0.18;
+  transition: opacity 0.09s ease-out;
+}
+.dl-beatlamp.on {
+  opacity: 1;
+  box-shadow: 0 0 10px var(--tone);
+}
+.dl:focus {
+  outline: none;
+}
+.dl:focus-visible {
+  outline: 2px solid var(--tone);
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+
+/* triad windows (Module 5) */
+.tw-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.tw-setrow {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px 12px;
+}
+.tw-setlabel {
+  color: var(--ink-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+}
+.tw-windows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.tw-fig {
+  margin: 0;
+  text-align: center;
+}
+.tw-fig svg {
+  background: var(--board);
+  border-radius: 8px;
+}
+.tw-cap {
+  color: var(--ink-dim);
+  font-size: 11px;
+  margin-top: 4px;
 }

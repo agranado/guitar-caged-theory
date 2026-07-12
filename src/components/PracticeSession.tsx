@@ -1,0 +1,302 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Fretboard, { type ColorMode } from './Fretboard'
+import ColorModeToggle from './ColorModeToggle'
+import {
+  DIATONIC_ROMANS,
+  FRETS,
+  NOTES,
+  freshNotes,
+  minorLensLabel,
+  resolveOverlay,
+} from '../lib/theory'
+import type { Degree } from '../lib/theory'
+import { PROGRESSIONS, PROGRESSION_BY_ID, type ProgChord } from '../lib/progressions'
+import { TIPS } from '../lib/tips'
+import { useMetronome } from '../lib/useMetronome'
+import './degree-lens.css'
+import './practice.css'
+
+const BEATS_PER_BAR = 4
+const ZONE_SPAN = 3
+const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
+const BUILDER_CHORDS = ['Isus2', ...DIATONIC_ROMANS]
+
+export default function PracticeSession() {
+  const [keyName, setKeyName] = useState('D')
+  const [sourceId, setSourceId] = useState('home')
+  const [customChords, setCustomChords] = useState<ProgChord[]>([
+    { roman: 'vi' },
+    { roman: 'IV' },
+    { roman: 'V' },
+  ])
+  const [seventh, setSeventh] = useState(false)
+  const [minor, setMinor] = useState(false)
+  const [colorMode, setColorMode] = useState<ColorMode>('function')
+  const [zoneStart, setZoneStart] = useState(7)
+  const [zoom, setZoom] = useState(false)
+
+  const [bpm, setBpm] = useState(72)
+  const [barsPerChord, setBarsPerChord] = useState(2)
+  const [countInOn, setCountInOn] = useState(true)
+  const [playing, setPlaying] = useState(false)
+  const [activeIdx, setActiveIdx] = useState(0)
+
+  const isCustom = sourceId === 'custom'
+  const chords: ProgChord[] = isCustom ? customChords : PROGRESSION_BY_ID[sourceId].chords
+  const len = chords.length
+  const idx = len ? activeIdx % len : 0
+  const current = chords[idx]
+  const next = len ? chords[(idx + 1) % len] : undefined
+
+  const overlay = useMemo(
+    () => (current ? resolveOverlay(keyName, current.roman, seventh) : null),
+    [keyName, current, seventh],
+  )
+  const nextOverlay = useMemo(
+    () => (next ? resolveOverlay(keyName, next.roman, seventh) : null),
+    [keyName, next, seventh],
+  )
+
+  const degLabel = (d: Degree) => (minor ? minorLensLabel(d) : String(d))
+
+  // Fresh-note pulse whenever the active chord changes.
+  const [freshSet, setFreshSet] = useState<Set<Degree> | null>(null)
+  const [pulseId, setPulseId] = useState(0)
+  const prevDegrees = useRef<Degree[]>(overlay ? overlay.degrees : [])
+  useEffect(() => {
+    if (!overlay) return
+    setFreshSet(new Set(freshNotes(prevDegrees.current, overlay.degrees)))
+    setPulseId((p) => p + 1)
+    prevDegrees.current = overlay.degrees
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, current?.roman, keyName, seventh])
+
+  const metro = useMetronome({
+    playing: playing && len > 0,
+    bpm,
+    barsPerChord,
+    beatsPerBar: BEATS_PER_BAR,
+    countInBars: countInOn ? 1 : 0,
+    onChordAdvance: () => setActiveIdx((i) => (len ? (i + 1) % len : 0)),
+  })
+
+  const changeSource = (id: string) => {
+    setSourceId(id)
+    setActiveIdx(0)
+    if (id !== 'custom') {
+      const p = PROGRESSION_BY_ID[id]
+      if (p.autoMinor) setMinor(true)
+    }
+  }
+
+  const step = (dir: number) => {
+    if (!len) return
+    setActiveIdx((i) => (((i + dir) % len) + len) % len)
+  }
+
+  const zone = { start: zoneStart, end: Math.min(FRETS, zoneStart + ZONE_SPAN) }
+  const view = zoom
+    ? { start: clamp(zoneStart - 1, 0, FRETS), end: clamp(zoneStart + 5, 0, FRETS) }
+    : { start: 0, end: FRETS }
+
+  // countdown: highlight the upcoming change during the last bar of the chord
+  const showCue = metro.phase === 'play' && metro.beatsUntilChange <= BEATS_PER_BAR
+  const target = current?.target
+  const tip = current ? TIPS[current.roman] : undefined
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowRight') { step(1); e.preventDefault() }
+    else if (e.key === 'ArrowLeft') { step(-1); e.preventDefault() }
+    else if (e.key === ' ') { setPlaying((p) => !p); e.preventDefault() }
+  }
+
+  return (
+    <section className="pr dl" tabIndex={0} onKeyDown={onKeyDown} aria-label="Practice session">
+      {/* transport */}
+      <div className="dl-bar pr-transport">
+        <label htmlFor="pr-src">Progression</label>
+        <select id="pr-src" value={sourceId} onChange={(e) => changeSource(e.target.value)}>
+          {PROGRESSIONS.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+          <option value="custom">Custom…</option>
+        </select>
+
+        <label htmlFor="pr-key">Key</label>
+        <select id="pr-key" value={keyName} onChange={(e) => setKeyName(e.target.value)}>
+          {NOTES.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+
+        <label htmlFor="pr-bpm">BPM</label>
+        <input id="pr-bpm" type="number" min={30} max={240} value={bpm}
+          onChange={(e) => setBpm(Number(e.target.value))} style={{ width: 62 }} />
+        <label htmlFor="pr-bars">bars/chord</label>
+        <input id="pr-bars" type="number" min={1} max={8} value={barsPerChord}
+          onChange={(e) => setBarsPerChord(Number(e.target.value))} style={{ width: 52 }} />
+
+        <button className="dl-tog" aria-pressed={countInOn} onClick={() => setCountInOn((v) => !v)}>
+          count-in
+        </button>
+        <button className="dl-tog" aria-pressed={seventh} onClick={() => setSeventh((v) => !v)}>
+          7ths
+        </button>
+        <button className="dl-tog minor" aria-pressed={minor} onClick={() => setMinor((v) => !v)}>
+          minor lens
+        </button>
+
+        <span className="dl-spacer" />
+        <button className="pr-play" aria-pressed={playing} onClick={() => setPlaying((p) => !p)}
+          disabled={len === 0}>
+          {playing ? '❚❚ Pause' : '▶ Play'}
+        </button>
+      </div>
+
+      {isCustom && (
+        <CustomBuilder
+          keyName={keyName}
+          seventh={seventh}
+          chords={customChords}
+          onAdd={(roman) => setCustomChords((c) => [...c, { roman }])}
+          onRemove={(i) => setCustomChords((c) => c.filter((_, j) => j !== i))}
+          onClear={() => setCustomChords([])}
+        />
+      )}
+
+      {/* now-playing + next */}
+      <div className="pr-stage">
+        <div className={'pr-now' + (metro.phase === 'countin' ? ' countin' : '')}>
+          {metro.phase === 'countin' ? (
+            <>
+              <div className="pr-nowlabel">count-in</div>
+              <div className="pr-nowname">{metro.countInRemaining}</div>
+              <div className="pr-nowsub">get ready…</div>
+            </>
+          ) : overlay ? (
+            <>
+              <div className="pr-nowlabel">{current?.minorLabel ? `${current.minorLabel} · ` : ''}{overlay.roman}</div>
+              <div className="pr-nowname">{overlay.name}</div>
+              <div className="pr-nowdeg">{overlay.degrees.map(degLabel).join(' · ')}</div>
+              {target && <div className="pr-nowtarget">🎯 {target}</div>}
+              {!target && tip && <div className="pr-nowtarget pr-tip" dangerouslySetInnerHTML={{ __html: tip }} />}
+            </>
+          ) : (
+            <div className="pr-nowsub">Add chords to your custom progression to begin.</div>
+          )}
+        </div>
+
+        <div className={'pr-next' + (showCue ? ' cue' : '')}>
+          <div className="pr-nextlabel">{showCue ? '→ changing to' : 'next'}</div>
+          {nextOverlay ? (
+            <>
+              <div className="pr-nextname">{nextOverlay.name}</div>
+              <div className="pr-nextdeg">{nextOverlay.degrees.map(degLabel).join(' · ')}</div>
+            </>
+          ) : (
+            <div className="pr-nextname">—</div>
+          )}
+        </div>
+      </div>
+
+      {/* beat + bar indicator */}
+      <div className="pr-beats" aria-hidden="true">
+        {Array.from({ length: BEATS_PER_BAR }, (_, i) => (
+          <span
+            key={i}
+            className={
+              'pr-beat' +
+              (metro.phase !== 'idle' && i === metro.beatInBar ? ' on' : '') +
+              (metro.phase === 'countin' ? ' countin' : '')
+            }
+          />
+        ))}
+        <span className="pr-barcount">
+          {metro.phase === 'play' ? `bar ${metro.barInChord + 1}/${barsPerChord}` : metro.phase === 'countin' ? 'count-in' : 'ready'}
+        </span>
+      </div>
+
+      {/* chord strip */}
+      <div className="dl-chips pr-strip" role="group" aria-label="Progression">
+        <button className="dl-stepbtn" onClick={() => step(-1)} aria-label="Previous chord">←</button>
+        {chords.map((c, i) => {
+          const o = resolveOverlay(keyName, c.roman, seventh)
+          return (
+            <button key={`${c.roman}-${i}`}
+              className={'dl-chip dl-progchip' + (i === idx ? ' active' : '')}
+              aria-pressed={i === idx}
+              onClick={() => setActiveIdx(i)}>
+              {c.minorLabel && <span className="dl-minorlabel">{c.minorLabel}</span>}
+              {o.name}
+              <small>{c.roman}</small>
+            </button>
+          )
+        })}
+        <button className="dl-stepbtn" onClick={() => step(1)} aria-label="Next chord">→</button>
+      </div>
+
+      {/* the board */}
+      <div className="dl-boardwrap">
+        <div className="pr-boardctl">
+          <ColorModeToggle mode={colorMode} onChange={setColorMode} />
+          <span className="dl-spacer" />
+          <label htmlFor="pr-pos" style={{ color: 'var(--ink-dim)', fontSize: 12 }}>Position</label>
+          <input id="pr-pos" type="range" min={0} max={12} value={zoneStart}
+            onChange={(e) => setZoneStart(Number(e.target.value))} style={{ width: 120 }} />
+          <button className="dl-tog" aria-pressed={zoom} onClick={() => setZoom((v) => !v)}>zoom</button>
+        </div>
+        {overlay && (
+          <Fretboard
+            keyName={keyName}
+            chord={overlay}
+            showGuides={false}
+            showNames={false}
+            minorLens={minor}
+            colorMode={colorMode}
+            freshSet={freshSet ?? undefined}
+            pulseId={pulseId}
+            zone={zone}
+            view={view}
+          />
+        )}
+      </div>
+    </section>
+  )
+}
+
+function CustomBuilder({
+  keyName, seventh, chords, onAdd, onRemove, onClear,
+}: {
+  keyName: string
+  seventh: boolean
+  chords: ProgChord[]
+  onAdd: (roman: string) => void
+  onRemove: (i: number) => void
+  onClear: () => void
+}) {
+  return (
+    <div className="pr-builder">
+      <div className="pr-builderrow">
+        <span className="dl-tag">Add chord</span>
+        {BUILDER_CHORDS.map((r) => (
+          <button key={r} className="dl-chip" onClick={() => onAdd(r)}>
+            {resolveOverlay(keyName, r, seventh).name}
+            <small>{r}</small>
+          </button>
+        ))}
+      </div>
+      <div className="pr-builderrow">
+        <span className="dl-tag">Your progression</span>
+        {chords.length === 0 && <span style={{ color: 'var(--ink-faint)', fontSize: 12 }}>empty — add chords above</span>}
+        {chords.map((c, i) => (
+          <button key={`${c.roman}-${i}`} className="dl-chip pr-remove" onClick={() => onRemove(i)}
+            title="remove">
+            {resolveOverlay(keyName, c.roman, seventh).name}
+            <small>{c.roman} ✕</small>
+          </button>
+        ))}
+        {chords.length > 0 && (
+          <button className="dl-stepbtn" onClick={onClear} style={{ marginLeft: 8 }}>clear</button>
+        )}
+      </div>
+    </div>
+  )
+}
