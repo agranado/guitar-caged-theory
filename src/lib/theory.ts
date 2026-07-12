@@ -60,6 +60,15 @@ export const ROMAN: Record<Degree, string> = {
 }
 
 /**
+ * The "character note" of each diatonic chord (01 §2, last column) — the single
+ * degree that gives the chord its flavour and that the lesson tells you to aim
+ * at. Keyed by the chord's root degree.
+ */
+export const CHARACTER_BY_DEGREE: Record<Degree, Degree> = {
+  1: 3, 2: 4, 3: 7, 4: 4, 5: 7, 6: 6, 7: 7,
+}
+
+/**
  * The minor-lens relabeling dictionary (01 §3). The minor tonic lives on
  * major-map degree 6; every other label falls out from that anchor.
  */
@@ -234,6 +243,36 @@ export function resolveOverlay(key: string, roman: string, seventh: boolean): Ov
 
 /** The seven diatonic roman numerals, I..vii°. */
 export const DIATONIC_ROMANS: string[] = [1, 2, 3, 4, 5, 6, 7].map((n) => ROMAN[n as Degree])
+
+/** The harmonic role each chord tone plays — for colouring by function. */
+export interface ChordRoles {
+  root: Degree
+  third: Degree | null // null for a sus chord (no 3rd)
+  fifth: Degree | null
+  seventh: Degree | null // present only when the 7th is showing
+  character: Degree // the chord's flavour note
+}
+
+/**
+ * Classify a chord's tones by role (root / 3rd / 5th / 7th) plus its character
+ * note. Guide tones are the 3rd and 7th; the root and 5th are "furniture".
+ */
+export function chordRoles(roman: string, seventh = false): ChordRoles {
+  const n = romanToDegree(roman)
+  const isSpecial = !!SPECIALS[roman]
+  const alreadyHasQuality = /7|sus/i.test(roman)
+  const withSeventh = seventh && !isSpecial && !alreadyHasQuality ? roman + '7' : roman
+  const set = new Set(chordDegrees(withSeventh))
+  const has = (d: Degree): Degree | null => (set.has(d) ? d : null)
+  const third = has(wrap(n + 2))
+  return {
+    root: n,
+    third,
+    fifth: has(wrap(n + 4)),
+    seventh: has(wrap(n + 6)),
+    character: third === null ? wrap(n + 1) : CHARACTER_BY_DEGREE[n],
+  }
+}
 
 /** Degrees present in `next` that were not in `prev` — the change-announcers. */
 export function freshNotes(prev: Degree[], next: Degree[]): Degree[] {

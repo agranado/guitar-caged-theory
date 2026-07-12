@@ -51,6 +51,39 @@ describe('<DegreeLens />', () => {
     expect(container.querySelector('.dl-info')?.textContent).toContain('G (IV) → glow 4 · 6 · 1')
   })
 
+  it('function colour mode paints the 3rd cyan, root gold, and the 5th furniture', () => {
+    const { container } = render(
+      <DegreeLens initialRoman="IV" showStepper={false} initialColorMode="function" />,
+    )
+    const fillOf = (cls: string) =>
+      (container.querySelector(`circle.${cls}`) as SVGCircleElement | null)?.getAttribute('fill')
+    expect(fillOf('dl-role-3rd')).toBe('var(--guide)')
+    expect(fillOf('dl-role-root')).toBe('var(--root)')
+    expect(fillOf('dl-role-5th')).toBe('var(--furniture)')
+  })
+
+  it('people colour mode makes root furniture and guides bright', () => {
+    const { container } = render(
+      <DegreeLens initialRoman="IV" showStepper={false} initialColorMode="people" />,
+    )
+    const fillOf = (cls: string) =>
+      (container.querySelector(`circle.${cls}`) as SVGCircleElement | null)?.getAttribute('fill')
+    expect(fillOf('dl-role-root')).toBe('var(--furniture)')
+    expect(fillOf('dl-role-3rd')).toBe('var(--guide)')
+  })
+
+  it('the colour toggle switches modes', () => {
+    const { container } = render(<DegreeLens initialRoman="IV" showStepper={false} />)
+    // default 'current': 3rd has no special fill (it's a plain tone)
+    expect((container.querySelector('circle.dl-role-3rd') as SVGCircleElement).getAttribute('fill')).toBe(
+      'var(--tone)',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'function' }))
+    expect((container.querySelector('circle.dl-role-3rd') as SVGCircleElement).getAttribute('fill')).toBe(
+      'var(--guide)',
+    )
+  })
+
   it('the minor lens relabels degrees without moving the map (6 -> 1)', () => {
     const { container } = render(<DegreeLens showStepper={false} />)
     fireEvent.click(screen.getByRole('button', { name: 'minor lens' }))

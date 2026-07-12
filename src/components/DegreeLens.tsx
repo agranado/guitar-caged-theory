@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Fretboard from './Fretboard'
+import Fretboard, { type ColorMode } from './Fretboard'
 import OverlayControls from './OverlayControls'
 import ProgressionStepper from './ProgressionStepper'
+import ColorModeToggle, { LegendForMode } from './ColorModeToggle'
 import {
   FRETS,
   freshNotes,
@@ -25,6 +26,7 @@ export interface DegreeLensProps {
   initialSeventh?: boolean
   initialMinor?: boolean
   initialGuides?: boolean
+  initialColorMode?: ColorMode
   /** Show the progression stepper (default true). */
   showStepper?: boolean
   initialProgId?: string
@@ -37,6 +39,7 @@ export default function DegreeLens({
   initialSeventh = false,
   initialMinor = false,
   initialGuides = false,
+  initialColorMode = 'current',
   showStepper = true,
   initialProgId = 'home',
 }: DegreeLensProps) {
@@ -47,6 +50,7 @@ export default function DegreeLens({
   const [minor, setMinor] = useState(initialMinor)
   const [names, setNames] = useState(false)
   const [zoneStart, setZoneStart] = useState(initialZoneStart)
+  const [colorMode, setColorMode] = useState<ColorMode>(initialColorMode)
   // On a narrow screen, default to the zoomed position window (the whole neck
   // doesn't fit legibly on a phone).
   const [zoom, setZoom] = useState(
@@ -214,44 +218,20 @@ export default function DegreeLens({
       />
 
       <div className="dl-boardwrap">
+        <ColorModeToggle mode={colorMode} onChange={setColorMode} />
         <Fretboard
           keyName={keyName}
           chord={overlay}
           showGuides={guides}
           showNames={names}
           minorLens={minor}
+          colorMode={colorMode}
           freshSet={freshSet ?? undefined}
           pulseId={pulseId}
           zone={zone}
           view={view}
         />
-        <div className="dl-legend">
-          <span>
-            <span className="dl-dot" style={{ background: 'var(--root)' }} />
-            chord root
-          </span>
-          <span>
-            <span className="dl-dot" style={{ background: 'var(--tone)' }} />
-            chord tone
-          </span>
-          <span>
-            <span
-              className="dl-dot"
-              style={{ background: 'var(--panel-2)', boxShadow: '0 0 0 2.5px var(--guide)' }}
-            />
-            guide tone (3rd &amp; 7th)
-          </span>
-          <span>
-            <span className="dl-dot" style={{ background: 'var(--scale-dot)' }} />
-            scale tone
-          </span>
-          {minor && (
-            <span>
-              <span className="dl-dot" style={{ background: 'var(--minor)' }} />
-              minor tonic (deg 6)
-            </span>
-          )}
-        </div>
+        <LegendForMode mode={colorMode} minor={minor} />
       </div>
 
       {showStepper && (

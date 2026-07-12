@@ -73,6 +73,40 @@
   margin-bottom: 14px;
 }
 
+/* colour-mode segmented control */
+.dl-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 10px;
+  padding: 3px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.dl-seglabel {
+  color: var(--ink-faint);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0 8px 0 6px;
+}
+.dl-segbtn {
+  background: none;
+  border: none;
+  color: var(--ink-dim);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font: inherit;
+  transition: background 0.12s, color 0.12s;
+}
+.dl-segbtn.active {
+  background: var(--ink);
+  color: var(--stage);
+  font-weight: 600;
+}
+
 .dl-legend {
   display: flex;
   gap: 18px;
@@ -153,15 +187,9 @@
   color: var(--fresh);
 }
 
-/* the luminous lit map — chord tones glow, the root hotter */
-.dl-tonedot {
-  filter: drop-shadow(0 0 4px rgba(232, 163, 61, 0.5));
-}
-.dl-rootdot {
-  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.7));
-}
-
-/* overlay-switch: each trio fades/scales in as the glow migrates */
+/* overlay-switch: each trio fades/scales in as the glow migrates.
+   (The luminous drop-shadow is applied inline per fill colour so it matches
+   whichever colour mode is active.) */
 @keyframes dl-glowin {
   0% {
     opacity: 0.15;
@@ -172,8 +200,7 @@
     transform: scale(1);
   }
 }
-.dl-tonedot,
-.dl-rootdot {
+.dl-dot {
   transform-box: fill-box;
   transform-origin: center;
   animation: dl-glowin 0.34s ease-out;
@@ -197,8 +224,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dl-fresh,
-  .dl-tonedot,
-  .dl-rootdot {
+  .dl-dot {
     animation: none;
   }
   .dl-chip,

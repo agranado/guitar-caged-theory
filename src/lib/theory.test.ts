@@ -11,6 +11,7 @@ import {
   noteNameOfDegree,
   chordName,
   resolveOverlay,
+  chordRoles,
   SPECIALS,
 } from './theory'
 import type { Degree } from './theory'
@@ -136,6 +137,18 @@ describe('noteNameOfDegree', () => {
   it('degree 1 of D is D; degree 4 of D is G', () => {
     expect(noteNameOfDegree('D', 1)).toBe('D')
     expect(noteNameOfDegree('D', 4)).toBe('G')
+  })
+})
+
+describe('chordRoles', () => {
+  it('IV in D: root 4, 3rd 6, 5th 1, no 7th, character 4', () => {
+    expect(chordRoles('IV')).toEqual({ root: 4, third: 6, fifth: 1, seventh: null, character: 4 })
+  })
+  it('V7: root 5, 3rd 7, 5th 2, 7th 4, character 7', () => {
+    expect(chordRoles('V', true)).toEqual({ root: 5, third: 7, fifth: 2, seventh: 4, character: 7 })
+  })
+  it('Isus2: no 3rd, character is the sus note (2)', () => {
+    expect(chordRoles('Isus2')).toEqual({ root: 1, third: null, fifth: 5, seventh: null, character: 2 })
   })
 })
 
