@@ -29,10 +29,10 @@ describe('<Checklist />', () => {
 })
 
 describe('<App /> navigation', () => {
-  it('renders all nine nav entries and the overview by default', () => {
+  it('renders all nav entries and the overview by default', () => {
     render(<App />)
-    // 9 modules (overview + 8)
-    expect(screen.getAllByRole('button').filter((b) => b.className.includes('app-navitem'))).toHaveLength(9)
+    // Practice + overview + 8 modules = 10
+    expect(screen.getAllByRole('button').filter((b) => b.className.includes('app-navitem'))).toHaveLength(10)
     expect(screen.getByText('Framework')).toBeTruthy()
     // overview overlays table has the IV roman
     expect(screen.getByRole('heading', { name: 'The Degree Lens' })).toBeTruthy()

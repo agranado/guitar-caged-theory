@@ -1,10 +1,31 @@
 import { useEffect, useState } from 'react'
 import { MODULES } from './content/curriculum'
+import PracticeSession from './components/PracticeSession'
 import './components/lesson.css'
 
+interface NavEntry {
+  id: string
+  badge: string
+  title: string
+  eyebrow: string
+}
+
+const NAV: NavEntry[] = [
+  { id: 'practice', badge: '▶', title: 'Practice', eyebrow: 'Play-along' },
+  ...MODULES.map((m) => ({
+    id: m.id,
+    badge: m.num === 'overview' ? '◆' : String(m.num),
+    title: m.title,
+    eyebrow: m.num === 'overview' ? 'Framework' : `Module ${m.num}`,
+  })),
+]
+
+function validId(id: string): string {
+  return NAV.some((n) => n.id === id) ? id : 'overview'
+}
+
 function currentIdFromHash(): string {
-  const h = window.location.hash.replace(/^#/, '')
-  return MODULES.some((m) => m.id === h) ? h : 'overview'
+  return validId(window.location.hash.replace(/^#/, ''))
 }
 
 export default function App() {
@@ -20,18 +41,18 @@ export default function App() {
     window.location.hash = id
     setCurrentId(id)
     try {
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
       window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' })
     } catch {
       // jsdom / unsupported: no-op
     }
   }
 
-  const idx = MODULES.findIndex((m) => m.id === currentId)
-  const mod = MODULES[idx]
-  const prev = idx > 0 ? MODULES[idx - 1] : null
-  const next = idx < MODULES.length - 1 ? MODULES[idx + 1] : null
-  const navNum = (m: (typeof MODULES)[number]) => (m.num === 'overview' ? '◆' : String(m.num))
+  const idx = NAV.findIndex((n) => n.id === currentId)
+  const entry = NAV[idx]
+  const prev = idx > 0 ? NAV[idx - 1] : null
+  const next = idx < NAV.length - 1 ? NAV[idx + 1] : null
+  const mod = MODULES.find((m) => m.id === currentId)
 
   return (
     <div className="app-shell">
@@ -40,16 +61,16 @@ export default function App() {
           Degree Lens
           <span className="thin">one map, seven overlays</span>
         </div>
-        <nav className="app-nav" aria-label="Modules">
-          {MODULES.map((m) => (
+        <nav className="app-nav" aria-label="Sections">
+          {NAV.map((n) => (
             <button
-              key={m.id}
-              className={'app-navitem' + (m.id === currentId ? ' active' : '')}
-              aria-current={m.id === currentId ? 'page' : undefined}
-              onClick={() => go(m.id)}
+              key={n.id}
+              className={'app-navitem' + (n.id === currentId ? ' active' : '') + (n.id === 'practice' ? ' practice' : '')}
+              aria-current={n.id === currentId ? 'page' : undefined}
+              onClick={() => go(n.id)}
             >
-              <span className="app-navnum">{navNum(m)}</span>
-              <span className="app-navtitle">{m.title}</span>
+              <span className="app-navnum">{n.badge}</span>
+              <span className="app-navtitle">{n.title}</span>
             </button>
           ))}
         </nav>
@@ -57,14 +78,18 @@ export default function App() {
 
       <main className="lesson">
         <header className="lesson-head">
-          <div className="lesson-eyebrow">
-            {mod.num === 'overview' ? 'Framework' : `Module ${mod.num}`}
-          </div>
-          <h1 className="lesson-title">{mod.title}</h1>
-          <div className="lesson-sub">{mod.subtitle}</div>
+          <div className="lesson-eyebrow">{entry.eyebrow}</div>
+          <h1 className="lesson-title">{entry.title}</h1>
+          {mod && <div className="lesson-sub">{mod.subtitle}</div>}
+          {currentId === 'practice' && (
+            <div className="lesson-sub">
+              Pick a progression, set the tempo, hit play — the board switches chords so you can watch
+              and play at once. No audio; your guitar is the sound.
+            </div>
+          )}
         </header>
 
-        <mod.Body />
+        {currentId === 'practice' ? <PracticeSession /> : mod ? <mod.Body /> : null}
 
         <div className="app-pager">
           {prev ? (

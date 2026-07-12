@@ -57,6 +57,16 @@
   color: var(--ink);
   border-left-color: var(--tone);
 }
+.app-navitem.practice {
+  color: var(--tone);
+  margin-bottom: 8px;
+}
+.app-navitem.practice .app-navnum {
+  color: var(--tone);
+}
+.app-navitem.practice.active {
+  border-left-color: var(--tone);
+}
 .app-navnum {
   font-size: 11px;
   color: var(--ink-faint);
