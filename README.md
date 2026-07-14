@@ -90,3 +90,29 @@ Pushing to `main` builds and publishes to GitHub Pages via
 `.github/workflows/deploy.yml` (enable Pages → *Source: GitHub Actions* in repo
 settings once). The build uses a relative base, so `dist/` also opens directly
 from `file://`.
+
+## Mobile (Android, Capacitor)
+
+The app is Capacitor-ready. Native behavior (dark status bar, Android back
+button, landscape-lock in Practice) lives in `src/lib/native.ts`, guarded by
+`isNative()` so the web build is unaffected. `capacitor.config.ts` is committed;
+the generated `android/` project is **gitignored** (regenerate it any time).
+
+Prerequisites (one-time): **Android Studio + JDK 17 + Android SDK**.
+
+```sh
+npm run mobile:add       # generate the android/ project (once)
+npm run mobile:sync      # build web + copy into the native project
+npm run mobile:android   # open in Android Studio to run on a device
+```
+
+Practice locks to landscape on device; the rest of the app rotates freely.
+
+**Distribution reality:**
+- *Personal use* — build a debug APK in Android Studio (or run the manual
+  **Android debug APK** GitHub Action) and sideload. Free, minutes.
+- *Play Store* — $25 one-time; new personal accounts must run a closed test
+  (12 testers / 14 days) before production. Not worth it for a single-user app.
+
+Once you start customizing the native shell (icons, splash, manifest), un-ignore
+`/android` in `.gitignore` and commit it.

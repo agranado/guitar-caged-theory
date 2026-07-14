@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MODULES } from './content/curriculum'
 import PracticeSession from './components/PracticeSession'
+import { initNativeShell, lockLandscape, unlockOrientation } from './lib/native'
 import './components/lesson.css'
 
 interface NavEntry {
@@ -36,6 +37,25 @@ export default function App() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+
+  // Native shell: hardware back navigates to the overview before exiting.
+  const currentIdRef = useRef(currentId)
+  currentIdRef.current = currentId
+  useEffect(() => {
+    initNativeShell(() => {
+      if (currentIdRef.current !== 'overview') {
+        window.location.hash = 'overview'
+        return true
+      }
+      return false
+    })
+  }, [])
+
+  // Lock Practice to landscape on native; free rotation elsewhere.
+  useEffect(() => {
+    if (currentId === 'practice') void lockLandscape()
+    else void unlockOrientation()
+  }, [currentId])
 
   const go = (id: string) => {
     window.location.hash = id
