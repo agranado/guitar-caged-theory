@@ -274,6 +274,31 @@
   margin-left: auto;
 }
 
+/* Phone in landscape on the Practice route: hide the sidebar so the board gets
+   the full width (Practice is landscape-locked in the shell; navigate in
+   portrait). Lessons keep their sidebar. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .app-shell.practice-route {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .app-shell.practice-route .app-sidebar {
+    display: none;
+  }
+  /* trim the page header so the board is the hero */
+  .practice-route .lesson-head {
+    margin-bottom: 8px;
+  }
+  .practice-route .lesson-eyebrow,
+  .practice-route .lesson-sub,
+  .practice-route .app-pager {
+    display: none;
+  }
+  .practice-route .lesson-title {
+    font-size: 20px;
+  }
+}
+
 /* mobile: sidebar becomes a horizontal scroller on top */
 @media (max-width: 760px) {
   .app-shell {

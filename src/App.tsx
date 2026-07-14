@@ -55,7 +55,7 @@ export default function App() {
   const mod = MODULES.find((m) => m.id === currentId)
 
   return (
-    <div className="app-shell">
+    <div className={'app-shell' + (currentId === 'practice' ? ' practice-route' : '')}>
       <aside className="app-sidebar">
         <div className="app-brand">
           Degree Lens
