@@ -1,0 +1,17 @@
+/* Self-hosted variable fonts (latin subset). No CDN → offline-clean web build
+   and a fully self-contained mobile shell. URLs are relative so Vite bundles
+   them with the correct base (works on GitHub Pages subpaths and file://). */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('./assets/fonts/jetbrains-mono.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url('./assets/fonts/bricolage-grotesque.woff2') format('woff2');
+}
