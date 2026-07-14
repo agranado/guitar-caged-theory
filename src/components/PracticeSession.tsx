@@ -96,6 +96,21 @@ export default function PracticeSession() {
     setJSON(CUSTOM_KEY, customChords)
   }, [customChords])
 
+  // React to entering/leaving phone-landscape (incl. the native orientation
+  // lock, which fires after mount): collapse the settings sheet and switch the
+  // board to the zoomed zone window so a player sees only the essentials.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const mq = window.matchMedia('(orientation: landscape) and (max-height: 540px)')
+    const apply = (matches: boolean) => {
+      setSettingsOpen(!matches)
+      setZoom(matches)
+    }
+    const onChange = (e: MediaQueryListEvent) => apply(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
   const [shared, setShared] = useState(false)
   const onShare = () => {
     if (typeof window === 'undefined') return
