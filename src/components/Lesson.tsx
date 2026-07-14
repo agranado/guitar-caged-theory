@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getJSON, setJSON } from '../lib/storage'
 import './lesson.css'
 
 // --- shared prose primitives (used by curriculum content) -----------------
@@ -31,32 +32,16 @@ export function Callout({ children }: { children: React.ReactNode }) {
 
 // --- done-when checklist, persisted to localStorage -----------------------
 
-// Use window.localStorage explicitly: some runtimes expose a bare `localStorage`
-// global with different semantics, so go through window in both browser & jsdom.
-const store = (): Storage | undefined =>
-  typeof window !== 'undefined' ? window.localStorage : undefined
-
 export function Checklist({ id, items, doneWhen }: { id: string; items: string[]; doneWhen: string }) {
   const storageKey = `dl-check-${id}`
   const [checked, setChecked] = useState<boolean[]>(() => {
-    try {
-      const raw = store()?.getItem(storageKey)
-      if (raw) {
-        const parsed = JSON.parse(raw) as boolean[]
-        if (Array.isArray(parsed) && parsed.length === items.length) return parsed
-      }
-    } catch {
-      // ignore malformed storage
-    }
+    const saved = getJSON<boolean[] | null>(storageKey, null)
+    if (Array.isArray(saved) && saved.length === items.length) return saved
     return items.map(() => false)
   })
 
   useEffect(() => {
-    try {
-      store()?.setItem(storageKey, JSON.stringify(checked))
-    } catch {
-      // ignore quota / disabled storage
-    }
+    setJSON(storageKey, checked)
   }, [storageKey, checked])
 
   const toggle = (i: number) =>

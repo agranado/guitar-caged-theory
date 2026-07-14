@@ -13,6 +13,10 @@ import type { Degree } from '../lib/theory'
 import { PROGRESSIONS, PROGRESSION_BY_ID, type ProgChord } from '../lib/progressions'
 import { TIPS } from '../lib/tips'
 import { useMetronome } from '../lib/useMetronome'
+import { useSwipe } from '../lib/useSwipe'
+import { loadColorMode, saveColorMode } from '../lib/prefs'
+import { getJSON, setJSON } from '../lib/storage'
+import { buildShareUrl, parseShareParams } from '../lib/share'
 import './degree-lens.css'
 import './practice.css'
 
@@ -20,20 +24,36 @@ const BEATS_PER_BAR = 4
 const ZONE_SPAN = 3
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
 const BUILDER_CHORDS = ['Isus2', ...DIATONIC_ROMANS]
+const CUSTOM_KEY = 'dl:customProg'
+const DEFAULT_CUSTOM: ProgChord[] = [{ roman: 'vi' }, { roman: 'IV' }, { roman: 'V' }]
 
 export default function PracticeSession() {
-  const [keyName, setKeyName] = useState('D')
-  const [sourceId, setSourceId] = useState('home')
-  const [customChords, setCustomChords] = useState<ProgChord[]>([
-    { roman: 'vi' },
-    { roman: 'IV' },
-    { roman: 'V' },
-  ])
+  // A shared URL (?p=…&k=…&lens=…) hydrates a custom setup on first load.
+  const urlCfg = useRef(
+    typeof window !== 'undefined' ? parseShareParams(window.location.search) : null,
+  ).current
+
+  const [keyName, setKeyName] = useState(urlCfg?.key ?? 'D')
+  const [sourceId, setSourceId] = useState(urlCfg ? 'custom' : 'home')
+  const [customChords, setCustomChords] = useState<ProgChord[]>(() =>
+    urlCfg ? urlCfg.chords : getJSON<ProgChord[]>(CUSTOM_KEY, DEFAULT_CUSTOM),
+  )
   const [seventh, setSeventh] = useState(false)
-  const [minor, setMinor] = useState(false)
-  const [colorMode, setColorMode] = useState<ColorMode>('function')
+  const [minor, setMinor] = useState(urlCfg?.lens === 'min')
+  const [colorMode, setColorMode] = useState<ColorMode>(loadColorMode)
+  const changeColorMode = (m: ColorMode) => {
+    setColorMode(m)
+    saveColorMode(m)
+  }
   const [zoneStart, setZoneStart] = useState(7)
   const [zoom, setZoom] = useState(false)
+  // Settings collapse into a sheet; open by default except on a phone in
+  // landscape, where a player mid-take wants only the board + HUD.
+  const [settingsOpen, setSettingsOpen] = useState(
+    () =>
+      typeof window === 'undefined' ||
+      !window.matchMedia?.('(orientation: landscape) and (max-height: 540px)').matches,
+  )
 
   const [bpm, setBpm] = useState(72)
   const [barsPerChord, setBarsPerChord] = useState(2)
@@ -71,6 +91,42 @@ export default function PracticeSession() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, current?.roman, keyName, seventh])
 
+  // Persist the custom progression so it survives a reload.
+  useEffect(() => {
+    setJSON(CUSTOM_KEY, customChords)
+  }, [customChords])
+
+  // React to entering/leaving phone-landscape (incl. the native orientation
+  // lock, which fires after mount): collapse the settings sheet and switch the
+  // board to the zoomed zone window so a player sees only the essentials.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return
+    const mq = window.matchMedia('(orientation: landscape) and (max-height: 540px)')
+    const apply = (matches: boolean) => {
+      setSettingsOpen(!matches)
+      setZoom(matches)
+    }
+    const onChange = (e: MediaQueryListEvent) => apply(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  const [shared, setShared] = useState(false)
+  const onShare = () => {
+    if (typeof window === 'undefined') return
+    const url = buildShareUrl(
+      { chords: customChords, key: keyName, lens: minor ? 'min' : 'maj' },
+      window.location.origin,
+      window.location.pathname,
+    )
+    try {
+      navigator.clipboard?.writeText(url)
+    } catch {
+      // clipboard unavailable — no-op
+    }
+    setShared(true)
+  }
+
   const metro = useMetronome({
     playing: playing && len > 0,
     bpm,
@@ -93,6 +149,8 @@ export default function PracticeSession() {
     if (!len) return
     setActiveIdx((i) => (((i + dir) % len) + len) % len)
   }
+  // Swipe left = advance, swipe right = go back (parity with ←/→).
+  const swipe = useSwipe(() => step(1), () => step(-1))
 
   const zone = { start: zoneStart, end: Math.min(FRETS, zoneStart + ZONE_SPAN) }
   const view = zoom
@@ -112,7 +170,7 @@ export default function PracticeSession() {
 
   return (
     <section className="pr dl" tabIndex={0} onKeyDown={onKeyDown} aria-label="Practice session">
-      {/* transport */}
+      {/* compact transport — always visible: progression, settings, play */}
       <div className="dl-bar pr-transport">
         <label htmlFor="pr-src">Progression</label>
         <select id="pr-src" value={sourceId} onChange={(e) => changeSource(e.target.value)}>
@@ -122,26 +180,8 @@ export default function PracticeSession() {
           <option value="custom">Custom…</option>
         </select>
 
-        <label htmlFor="pr-key">Key</label>
-        <select id="pr-key" value={keyName} onChange={(e) => setKeyName(e.target.value)}>
-          {NOTES.map((n) => <option key={n} value={n}>{n}</option>)}
-        </select>
-
-        <label htmlFor="pr-bpm">BPM</label>
-        <input id="pr-bpm" type="number" min={30} max={240} value={bpm}
-          onChange={(e) => setBpm(Number(e.target.value))} style={{ width: 62 }} />
-        <label htmlFor="pr-bars">bars/chord</label>
-        <input id="pr-bars" type="number" min={1} max={8} value={barsPerChord}
-          onChange={(e) => setBarsPerChord(Number(e.target.value))} style={{ width: 52 }} />
-
-        <button className="dl-tog" aria-pressed={countInOn} onClick={() => setCountInOn((v) => !v)}>
-          count-in
-        </button>
-        <button className="dl-tog" aria-pressed={seventh} onClick={() => setSeventh((v) => !v)}>
-          7ths
-        </button>
-        <button className="dl-tog minor" aria-pressed={minor} onClick={() => setMinor((v) => !v)}>
-          minor lens
+        <button className="dl-tog" aria-pressed={settingsOpen} onClick={() => setSettingsOpen((v) => !v)}>
+          ⚙ settings
         </button>
 
         <span className="dl-spacer" />
@@ -151,71 +191,121 @@ export default function PracticeSession() {
         </button>
       </div>
 
-      {isCustom && (
-        <CustomBuilder
-          keyName={keyName}
-          seventh={seventh}
-          chords={customChords}
-          onAdd={(roman) => setCustomChords((c) => [...c, { roman }])}
-          onRemove={(i) => setCustomChords((c) => c.filter((_, j) => j !== i))}
-          onClear={() => setCustomChords([])}
-        />
+      {/* settings sheet — collapses on a phone in landscape */}
+      {settingsOpen && (
+        <div className="pr-settings">
+          <div className="pr-settingsrow">
+            <label htmlFor="pr-key">Key</label>
+            <select id="pr-key" value={keyName} onChange={(e) => setKeyName(e.target.value)}>
+              {NOTES.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <label htmlFor="pr-bpm">BPM</label>
+            <input id="pr-bpm" type="number" min={30} max={240} value={bpm}
+              onChange={(e) => setBpm(Number(e.target.value))} style={{ width: 62 }} />
+            <label htmlFor="pr-bars">bars/chord</label>
+            <input id="pr-bars" type="number" min={1} max={8} value={barsPerChord}
+              onChange={(e) => setBarsPerChord(Number(e.target.value))} style={{ width: 52 }} />
+            <button className="dl-tog" aria-pressed={countInOn} onClick={() => setCountInOn((v) => !v)}>count-in</button>
+            <button className="dl-tog" aria-pressed={seventh} onClick={() => setSeventh((v) => !v)}>7ths</button>
+            <button className="dl-tog minor" aria-pressed={minor} onClick={() => setMinor((v) => !v)}>minor lens</button>
+          </div>
+          <div className="pr-settingsrow">
+            <ColorModeToggle mode={colorMode} onChange={changeColorMode} />
+            <span className="dl-spacer" />
+            <label htmlFor="pr-pos" style={{ color: 'var(--ink-dim)', fontSize: 12 }}>Position</label>
+            <input id="pr-pos" type="range" min={0} max={12} value={zoneStart}
+              onChange={(e) => setZoneStart(Number(e.target.value))} style={{ width: 120 }} />
+            <button className="dl-tog" aria-pressed={zoom} onClick={() => setZoom((v) => !v)}>zoom</button>
+          </div>
+          {isCustom && (
+            <CustomBuilder
+              keyName={keyName}
+              seventh={seventh}
+              chords={customChords}
+              onAdd={(roman) => setCustomChords((c) => [...c, { roman }])}
+              onRemove={(i) => setCustomChords((c) => c.filter((_, j) => j !== i))}
+              onClear={() => setCustomChords([])}
+              onShare={onShare}
+              shared={shared}
+            />
+          )}
+        </div>
       )}
 
-      {/* now-playing + next */}
-      <div className="pr-stage">
-        <div className={'pr-now' + (metro.phase === 'countin' ? ' countin' : '')}>
-          {metro.phase === 'countin' ? (
-            <>
-              <div className="pr-nowlabel">count-in</div>
-              <div className="pr-nowname">{metro.countInRemaining}</div>
-              <div className="pr-nowsub">get ready…</div>
-            </>
-          ) : overlay ? (
-            <>
-              <div className="pr-nowlabel">{current?.minorLabel ? `${current.minorLabel} · ` : ''}{overlay.roman}</div>
-              <div className="pr-nowname">{overlay.name}</div>
-              <div className="pr-nowdeg">{overlay.degrees.map(degLabel).join(' · ')}</div>
-              {target && <div className="pr-nowtarget">🎯 {target}</div>}
-              {!target && tip && <div className="pr-nowtarget pr-tip" dangerouslySetInnerHTML={{ __html: tip }} />}
-            </>
-          ) : (
-            <div className="pr-nowsub">Add chords to your custom progression to begin.</div>
-          )}
+      {/* board hero + player HUD (side rail in landscape) */}
+      <div className="pr-main">
+        <div className="pr-hud">
+          <div className="pr-stage">
+            <div className={'pr-now' + (metro.phase === 'countin' ? ' countin' : '')}>
+              {metro.phase === 'countin' ? (
+                <>
+                  <div className="pr-nowlabel">count-in</div>
+                  <div className="pr-nowname">{metro.countInRemaining}</div>
+                  <div className="pr-nowsub">get ready…</div>
+                </>
+              ) : overlay ? (
+                <>
+                  <div className="pr-nowlabel">{current?.minorLabel ? `${current.minorLabel} · ` : ''}{overlay.roman}</div>
+                  <div className="pr-nowname">{overlay.name}</div>
+                  <div className="pr-nowdeg">{overlay.degrees.map(degLabel).join(' · ')}</div>
+                  {target && <div className="pr-nowtarget">🎯 {target}</div>}
+                  {!target && tip && <div className="pr-nowtarget pr-tip" dangerouslySetInnerHTML={{ __html: tip }} />}
+                </>
+              ) : (
+                <div className="pr-nowsub">Add chords to your custom progression to begin.</div>
+              )}
+            </div>
+
+            <div className={'pr-next' + (showCue ? ' cue' : '')}>
+              <div className="pr-nextlabel">{showCue ? '→ changing to' : 'next'}</div>
+              {nextOverlay ? (
+                <>
+                  <div className="pr-nextname">{nextOverlay.name}</div>
+                  <div className="pr-nextdeg">{nextOverlay.degrees.map(degLabel).join(' · ')}</div>
+                </>
+              ) : (
+                <div className="pr-nextname">—</div>
+              )}
+            </div>
+          </div>
+
+          <div className="pr-beats" aria-hidden="true">
+            {Array.from({ length: BEATS_PER_BAR }, (_, i) => (
+              <span
+                key={i}
+                className={
+                  'pr-beat' +
+                  (metro.phase !== 'idle' && i === metro.beatInBar ? ' on' : '') +
+                  (metro.phase === 'countin' ? ' countin' : '')
+                }
+              />
+            ))}
+            <span className="pr-barcount">
+              {metro.phase === 'play' ? `bar ${metro.barInChord + 1}/${barsPerChord}` : metro.phase === 'countin' ? 'count-in' : 'ready'}
+            </span>
+          </div>
         </div>
 
-        <div className={'pr-next' + (showCue ? ' cue' : '')}>
-          <div className="pr-nextlabel">{showCue ? '→ changing to' : 'next'}</div>
-          {nextOverlay ? (
-            <>
-              <div className="pr-nextname">{nextOverlay.name}</div>
-              <div className="pr-nextdeg">{nextOverlay.degrees.map(degLabel).join(' · ')}</div>
-            </>
-          ) : (
-            <div className="pr-nextname">—</div>
+        <div className="dl-boardwrap" {...swipe}>
+          {overlay && (
+            <Fretboard
+              keyName={keyName}
+              chord={overlay}
+              showGuides={false}
+              showNames={false}
+              minorLens={minor}
+              colorMode={colorMode}
+              freshSet={freshSet ?? undefined}
+              pulseId={pulseId}
+              zone={zone}
+              view={view}
+            />
           )}
         </div>
-      </div>
-
-      {/* beat + bar indicator */}
-      <div className="pr-beats" aria-hidden="true">
-        {Array.from({ length: BEATS_PER_BAR }, (_, i) => (
-          <span
-            key={i}
-            className={
-              'pr-beat' +
-              (metro.phase !== 'idle' && i === metro.beatInBar ? ' on' : '') +
-              (metro.phase === 'countin' ? ' countin' : '')
-            }
-          />
-        ))}
-        <span className="pr-barcount">
-          {metro.phase === 'play' ? `bar ${metro.barInChord + 1}/${barsPerChord}` : metro.phase === 'countin' ? 'count-in' : 'ready'}
-        </span>
       </div>
 
       {/* chord strip */}
-      <div className="dl-chips pr-strip" role="group" aria-label="Progression">
+      <div className="dl-chips pr-strip" role="group" aria-label="Progression" {...swipe}>
         <button className="dl-stepbtn" onClick={() => step(-1)} aria-label="Previous chord">←</button>
         {chords.map((c, i) => {
           const o = resolveOverlay(keyName, c.roman, seventh)
@@ -232,38 +322,12 @@ export default function PracticeSession() {
         })}
         <button className="dl-stepbtn" onClick={() => step(1)} aria-label="Next chord">→</button>
       </div>
-
-      {/* the board */}
-      <div className="dl-boardwrap">
-        <div className="pr-boardctl">
-          <ColorModeToggle mode={colorMode} onChange={setColorMode} />
-          <span className="dl-spacer" />
-          <label htmlFor="pr-pos" style={{ color: 'var(--ink-dim)', fontSize: 12 }}>Position</label>
-          <input id="pr-pos" type="range" min={0} max={12} value={zoneStart}
-            onChange={(e) => setZoneStart(Number(e.target.value))} style={{ width: 120 }} />
-          <button className="dl-tog" aria-pressed={zoom} onClick={() => setZoom((v) => !v)}>zoom</button>
-        </div>
-        {overlay && (
-          <Fretboard
-            keyName={keyName}
-            chord={overlay}
-            showGuides={false}
-            showNames={false}
-            minorLens={minor}
-            colorMode={colorMode}
-            freshSet={freshSet ?? undefined}
-            pulseId={pulseId}
-            zone={zone}
-            view={view}
-          />
-        )}
-      </div>
     </section>
   )
 }
 
 function CustomBuilder({
-  keyName, seventh, chords, onAdd, onRemove, onClear,
+  keyName, seventh, chords, onAdd, onRemove, onClear, onShare, shared,
 }: {
   keyName: string
   seventh: boolean
@@ -271,6 +335,8 @@ function CustomBuilder({
   onAdd: (roman: string) => void
   onRemove: (i: number) => void
   onClear: () => void
+  onShare: () => void
+  shared: boolean
 }) {
   return (
     <div className="pr-builder">
@@ -294,7 +360,12 @@ function CustomBuilder({
           </button>
         ))}
         {chords.length > 0 && (
-          <button className="dl-stepbtn" onClick={onClear} style={{ marginLeft: 8 }}>clear</button>
+          <>
+            <button className="dl-stepbtn" onClick={onClear} style={{ marginLeft: 8 }}>clear</button>
+            <button className="dl-tog" onClick={onShare} title="Copy a shareable link to this progression">
+              {shared ? '✓ link copied' : '🔗 share link'}
+            </button>
+          </>
         )}
       </div>
     </div>

@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Capacitor native project — generated output (npm run mobile:add regenerates it
+# in ms). Un-ignore and commit once you begin native customization (icons,
+# splash, manifest edits, MainActivity).
+/android
+/ios
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -6,7 +6,12 @@
   gap: 28px;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 24px clamp(12px, 3vw, 40px) 80px;
+  /* Respect display cutouts / status bar / gesture bar on mobile shells.
+     max() keeps the desktop padding while never sitting under an inset. */
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-right: max(clamp(12px, 3vw, 40px), env(safe-area-inset-right));
+  padding-bottom: max(80px, env(safe-area-inset-bottom));
+  padding-left: max(clamp(12px, 3vw, 40px), env(safe-area-inset-left));
   align-items: start;
 }
 
@@ -267,6 +272,31 @@
 .app-pagerbtn.next {
   text-align: right;
   margin-left: auto;
+}
+
+/* Phone in landscape on the Practice route: hide the sidebar so the board gets
+   the full width (Practice is landscape-locked in the shell; navigate in
+   portrait). Lessons keep their sidebar. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .app-shell.practice-route {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .app-shell.practice-route .app-sidebar {
+    display: none;
+  }
+  /* trim the page header so the board is the hero */
+  .practice-route .lesson-head {
+    margin-bottom: 8px;
+  }
+  .practice-route .lesson-eyebrow,
+  .practice-route .lesson-sub,
+  .practice-route .app-pager {
+    display: none;
+  }
+  .practice-route .lesson-title {
+    font-size: 20px;
+  }
 }
 
 /* mobile: sidebar becomes a horizontal scroller on top */

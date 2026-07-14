@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-
-const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
+import { InternalClock, type ClockSource } from './clock'
 
 export interface MetronomeState {
   phase: 'idle' | 'countin' | 'play'
@@ -28,11 +27,19 @@ export interface MetronomeOpts {
   onChordAdvance?: () => void
   /** Called on every beat (for a visual/haptic tick). */
   onBeat?: (beatInBar: number, phase: MetronomeState['phase']) => void
+  /**
+   * Beat source. Defaults to an {@link InternalClock} driven by `bpm`. Pass a
+   * different source (e.g. a MIDI clock) to follow an external tempo — the hook
+   * is source-agnostic; only the boundary math lives here.
+   */
+  clock?: ClockSource
 }
 
 /**
  * A silent, visual metronome. Owns beat/bar timing; the consumer owns the chord
  * index and advances it in onChordAdvance. No audio — the guitar is the sound.
+ * Beats come from a {@link ClockSource}, so an external MIDI clock can drive it
+ * unchanged.
  */
 export function useMetronome({
   playing,
@@ -42,6 +49,7 @@ export function useMetronome({
   countInBars = 0,
   onChordAdvance,
   onBeat,
+  clock,
 }: MetronomeOpts): MetronomeState {
   const [state, setState] = useState<MetronomeState>(IDLE)
   const advanceRef = useRef(onChordAdvance)
@@ -49,17 +57,28 @@ export function useMetronome({
   const beatRef = useRef(onBeat)
   beatRef.current = onBeat
 
+  // One clock instance for the lifetime of the hook (provided, or internal).
+  const clockRef = useRef<ClockSource | null>(null)
+  if (clockRef.current === null) clockRef.current = clock ?? new InternalClock(bpm)
+
+  // Keep an internal clock's tempo in sync with the prop (no-op for sources
+  // that derive their own tempo, e.g. MIDI).
+  useEffect(() => {
+    clockRef.current?.setBpm?.(bpm)
+  }, [bpm])
+
   useEffect(() => {
     if (!playing) {
       setState(IDLE)
       return
     }
+    const src = clockRef.current!
     const bpb = Math.max(1, beatsPerBar)
     const perChord = Math.max(1, barsPerChord) * bpb
     const countIn = Math.max(0, countInBars) * bpb
     let n = 0 // beats elapsed since play started
 
-    const tick = () => {
+    const onBeatTick = () => {
       if (n < countIn) {
         setState({
           phase: 'countin',
@@ -85,10 +104,13 @@ export function useMetronome({
       n += 1
     }
 
-    tick() // fire the first beat immediately
-    const id = setInterval(tick, 60000 / clamp(bpm, 30, 300))
-    return () => clearInterval(id)
-  }, [playing, bpm, barsPerChord, beatsPerBar, countInBars])
+    const unsubscribe = src.onBeat(onBeatTick)
+    src.start()
+    return () => {
+      src.stop()
+      unsubscribe()
+    }
+  }, [playing, barsPerChord, beatsPerBar, countInBars])
 
   return state
 }

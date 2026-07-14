@@ -2,6 +2,29 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useMetronome } from './useMetronome'
+import type { ClockSource } from './clock'
+
+/** A hand-cranked clock — beats fire only when the test calls tick(). */
+class FakeClockSource implements ClockSource {
+  bpm = 100
+  private cb: (() => void) | null = null
+  private running = false
+  onBeat(cb: () => void) {
+    this.cb = cb
+    return () => {
+      this.cb = null
+    }
+  }
+  start() {
+    this.running = true
+  }
+  stop() {
+    this.running = false
+  }
+  tick() {
+    if (this.running && this.cb) this.cb()
+  }
+}
 
 afterEach(() => {
   vi.useRealTimers()
@@ -67,5 +90,28 @@ describe('useMetronome', () => {
       useMetronome({ playing: false, bpm: 90, barsPerChord: 2, onChordAdvance: () => {} }),
     )
     expect(result.current.phase).toBe('idle')
+  })
+
+  it('is source-agnostic: a hand-cranked ClockSource drives it with no timers', () => {
+    const fake = new FakeClockSource()
+    const onChordAdvance = vi.fn()
+    renderHook(() =>
+      useMetronome({
+        playing: true,
+        bpm: 100,
+        barsPerChord: 1,
+        beatsPerBar: 2, // perChord = 2 beats
+        countInBars: 0,
+        onChordAdvance,
+        clock: fake,
+      }),
+    )
+    // beat 0 (m=0, no advance), beat 1 (m=1), beat 2 (m=2 → boundary → advance)
+    act(() => {
+      fake.tick()
+      fake.tick()
+      fake.tick()
+    })
+    expect(onChordAdvance).toHaveBeenCalledTimes(1)
   })
 })
