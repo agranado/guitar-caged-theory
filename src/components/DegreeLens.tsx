@@ -13,6 +13,7 @@ import {
 import type { Degree, Overlay } from '../lib/theory'
 import { PROGRESSION_BY_ID } from '../lib/progressions'
 import { TIPS } from '../lib/tips'
+import { loadColorMode, saveColorMode } from '../lib/prefs'
 import './degree-lens.css'
 
 const ZONE_SPAN = 3 // a 4-fret CAGED position (start .. start+3)
@@ -39,7 +40,7 @@ export default function DegreeLens({
   initialSeventh = false,
   initialMinor = false,
   initialGuides = false,
-  initialColorMode = 'current',
+  initialColorMode,
   showStepper = true,
   initialProgId = 'home',
 }: DegreeLensProps) {
@@ -50,7 +51,11 @@ export default function DegreeLens({
   const [minor, setMinor] = useState(initialMinor)
   const [names, setNames] = useState(false)
   const [zoneStart, setZoneStart] = useState(initialZoneStart)
-  const [colorMode, setColorMode] = useState<ColorMode>(initialColorMode)
+  const [colorMode, setColorMode] = useState<ColorMode>(() => initialColorMode ?? loadColorMode())
+  const changeColorMode = (m: ColorMode) => {
+    setColorMode(m)
+    saveColorMode(m)
+  }
   // On a narrow screen, default to the zoomed position window (the whole neck
   // doesn't fit legibly on a phone).
   const [zoom, setZoom] = useState(
@@ -218,7 +223,7 @@ export default function DegreeLens({
       />
 
       <div className="dl-boardwrap">
-        <ColorModeToggle mode={colorMode} onChange={setColorMode} />
+        <ColorModeToggle mode={colorMode} onChange={changeColorMode} />
         <Fretboard
           keyName={keyName}
           chord={overlay}

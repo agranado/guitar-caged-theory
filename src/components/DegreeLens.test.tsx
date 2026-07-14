@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach } from 'vitest'
 import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import DegreeLens from './DegreeLens'
 
 afterEach(cleanup)
+beforeEach(() => window.localStorage.clear())
 
 describe('<DegreeLens />', () => {
   it('mounts with a given overlay in D and renders the board', () => {
@@ -72,16 +73,26 @@ describe('<DegreeLens />', () => {
     expect(fillOf('dl-role-3rd')).toBe('var(--guide)')
   })
 
-  it('the colour toggle switches modes', () => {
+  it('defaults to the function colour mode on a first visit', () => {
     const { container } = render(<DegreeLens initialRoman="IV" showStepper={false} />)
-    // default 'current': 3rd has no special fill (it's a plain tone)
-    expect((container.querySelector('circle.dl-role-3rd') as SVGCircleElement).getAttribute('fill')).toBe(
-      'var(--tone)',
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'function' }))
+    // No stored preference → planner default is 'function' (3rd painted cyan).
     expect((container.querySelector('circle.dl-role-3rd') as SVGCircleElement).getAttribute('fill')).toBe(
       'var(--guide)',
     )
+  })
+
+  it('the colour toggle switches modes and persists the choice', () => {
+    const { container, unmount } = render(<DegreeLens initialRoman="IV" showStepper={false} />)
+    fireEvent.click(screen.getByRole('button', { name: 'current' }))
+    expect((container.querySelector('circle.dl-role-3rd') as SVGCircleElement).getAttribute('fill')).toBe(
+      'var(--tone)',
+    )
+    // Remount: the last choice ('current') is restored from storage.
+    unmount()
+    const again = render(<DegreeLens initialRoman="IV" showStepper={false} />)
+    expect(
+      (again.container.querySelector('circle.dl-role-3rd') as SVGCircleElement).getAttribute('fill'),
+    ).toBe('var(--tone)')
   })
 
   it('the minor lens relabels degrees without moving the map (6 -> 1)', () => {

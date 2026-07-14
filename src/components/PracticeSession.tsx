@@ -13,6 +13,7 @@ import type { Degree } from '../lib/theory'
 import { PROGRESSIONS, PROGRESSION_BY_ID, type ProgChord } from '../lib/progressions'
 import { TIPS } from '../lib/tips'
 import { useMetronome } from '../lib/useMetronome'
+import { loadColorMode, saveColorMode } from '../lib/prefs'
 import './degree-lens.css'
 import './practice.css'
 
@@ -31,7 +32,11 @@ export default function PracticeSession() {
   ])
   const [seventh, setSeventh] = useState(false)
   const [minor, setMinor] = useState(false)
-  const [colorMode, setColorMode] = useState<ColorMode>('function')
+  const [colorMode, setColorMode] = useState<ColorMode>(loadColorMode)
+  const changeColorMode = (m: ColorMode) => {
+    setColorMode(m)
+    saveColorMode(m)
+  }
   const [zoneStart, setZoneStart] = useState(7)
   const [zoom, setZoom] = useState(false)
 
@@ -236,7 +241,7 @@ export default function PracticeSession() {
       {/* the board */}
       <div className="dl-boardwrap">
         <div className="pr-boardctl">
-          <ColorModeToggle mode={colorMode} onChange={setColorMode} />
+          <ColorModeToggle mode={colorMode} onChange={changeColorMode} />
           <span className="dl-spacer" />
           <label htmlFor="pr-pos" style={{ color: 'var(--ink-dim)', fontSize: 12 }}>Position</label>
           <input id="pr-pos" type="range" min={0} max={12} value={zoneStart}
