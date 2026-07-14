@@ -14,6 +14,8 @@ import { PROGRESSIONS, PROGRESSION_BY_ID, type ProgChord } from '../lib/progress
 import { TIPS } from '../lib/tips'
 import { useMetronome } from '../lib/useMetronome'
 import { loadColorMode, saveColorMode } from '../lib/prefs'
+import { getJSON, setJSON } from '../lib/storage'
+import { buildShareUrl, parseShareParams } from '../lib/share'
 import './degree-lens.css'
 import './practice.css'
 
@@ -21,17 +23,22 @@ const BEATS_PER_BAR = 4
 const ZONE_SPAN = 3
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
 const BUILDER_CHORDS = ['Isus2', ...DIATONIC_ROMANS]
+const CUSTOM_KEY = 'dl:customProg'
+const DEFAULT_CUSTOM: ProgChord[] = [{ roman: 'vi' }, { roman: 'IV' }, { roman: 'V' }]
 
 export default function PracticeSession() {
-  const [keyName, setKeyName] = useState('D')
-  const [sourceId, setSourceId] = useState('home')
-  const [customChords, setCustomChords] = useState<ProgChord[]>([
-    { roman: 'vi' },
-    { roman: 'IV' },
-    { roman: 'V' },
-  ])
+  // A shared URL (?p=…&k=…&lens=…) hydrates a custom setup on first load.
+  const urlCfg = useRef(
+    typeof window !== 'undefined' ? parseShareParams(window.location.search) : null,
+  ).current
+
+  const [keyName, setKeyName] = useState(urlCfg?.key ?? 'D')
+  const [sourceId, setSourceId] = useState(urlCfg ? 'custom' : 'home')
+  const [customChords, setCustomChords] = useState<ProgChord[]>(() =>
+    urlCfg ? urlCfg.chords : getJSON<ProgChord[]>(CUSTOM_KEY, DEFAULT_CUSTOM),
+  )
   const [seventh, setSeventh] = useState(false)
-  const [minor, setMinor] = useState(false)
+  const [minor, setMinor] = useState(urlCfg?.lens === 'min')
   const [colorMode, setColorMode] = useState<ColorMode>(loadColorMode)
   const changeColorMode = (m: ColorMode) => {
     setColorMode(m)
@@ -75,6 +82,27 @@ export default function PracticeSession() {
     prevDegrees.current = overlay.degrees
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, current?.roman, keyName, seventh])
+
+  // Persist the custom progression so it survives a reload.
+  useEffect(() => {
+    setJSON(CUSTOM_KEY, customChords)
+  }, [customChords])
+
+  const [shared, setShared] = useState(false)
+  const onShare = () => {
+    if (typeof window === 'undefined') return
+    const url = buildShareUrl(
+      { chords: customChords, key: keyName, lens: minor ? 'min' : 'maj' },
+      window.location.origin,
+      window.location.pathname,
+    )
+    try {
+      navigator.clipboard?.writeText(url)
+    } catch {
+      // clipboard unavailable — no-op
+    }
+    setShared(true)
+  }
 
   const metro = useMetronome({
     playing: playing && len > 0,
@@ -164,6 +192,8 @@ export default function PracticeSession() {
           onAdd={(roman) => setCustomChords((c) => [...c, { roman }])}
           onRemove={(i) => setCustomChords((c) => c.filter((_, j) => j !== i))}
           onClear={() => setCustomChords([])}
+          onShare={onShare}
+          shared={shared}
         />
       )}
 
@@ -268,7 +298,7 @@ export default function PracticeSession() {
 }
 
 function CustomBuilder({
-  keyName, seventh, chords, onAdd, onRemove, onClear,
+  keyName, seventh, chords, onAdd, onRemove, onClear, onShare, shared,
 }: {
   keyName: string
   seventh: boolean
@@ -276,6 +306,8 @@ function CustomBuilder({
   onAdd: (roman: string) => void
   onRemove: (i: number) => void
   onClear: () => void
+  onShare: () => void
+  shared: boolean
 }) {
   return (
     <div className="pr-builder">
@@ -299,7 +331,12 @@ function CustomBuilder({
           </button>
         ))}
         {chords.length > 0 && (
-          <button className="dl-stepbtn" onClick={onClear} style={{ marginLeft: 8 }}>clear</button>
+          <>
+            <button className="dl-stepbtn" onClick={onClear} style={{ marginLeft: 8 }}>clear</button>
+            <button className="dl-tog" onClick={onShare} title="Copy a shareable link to this progression">
+              {shared ? '✓ link copied' : '🔗 share link'}
+            </button>
+          </>
         )}
       </div>
     </div>
