@@ -6,7 +6,12 @@
   gap: 28px;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 24px clamp(12px, 3vw, 40px) 80px;
+  /* Respect display cutouts / status bar / gesture bar on mobile shells.
+     max() keeps the desktop padding while never sitting under an inset. */
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-right: max(clamp(12px, 3vw, 40px), env(safe-area-inset-right));
+  padding-bottom: max(80px, env(safe-area-inset-bottom));
+  padding-left: max(clamp(12px, 3vw, 40px), env(safe-area-inset-left));
   align-items: start;
 }
 
